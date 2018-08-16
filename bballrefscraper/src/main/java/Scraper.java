@@ -1,22 +1,27 @@
-import java.util.Arrays;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 import org.jsoup.nodes.Node;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Scraper {
     public static final String[] advancedRows = {"Blank", "Name", "Age", "G", "MP", "PER", "TS%", "3PAr", "FTr",
         "ORB%", "DRB%", "TRB%", "AST%", "STL%", "BLK%", "TOV%", "USG%", "Blank", "OWS", "DWS", "WS", "WS/48",
         "Blank", "OBPM", "DBPM", "BPM", "VORP"};
 
+    public static final String baseTeamUrl = "https://www.basketball-reference.com/teams/";
+
     public static void main(String[] args) throws Exception {
         if (args.length == 0) {
-            readSeasonLink("https://www.basketball-reference.com/teams/DEN/2001");
+            readSeasonLink("DEN", 2001);
             return;
         }
         String fileName = args[0];
-
+        List<String> years = readFile(fileName);
+        parseAdvanced(years);
     }
 
     private static void readPlayerLink(String url) throws Exception {
@@ -28,8 +33,8 @@ public class Scraper {
         // Unfortunately, it's wrapped in a comment for some reason.
     }
 
-    private static void readSeasonLink(String url) throws Exception {
-        String seasonLink = url + ".html";
+    private static void readSeasonLink(String team, int year) throws Exception {
+        String seasonLink = baseTeamUrl + team + "/" + year + ".html";
         final Document statsDoc = Jsoup.connect(seasonLink).get();
         Element statBlob = statsDoc.selectFirst("[role=main]");
         Element advanced = statBlob.selectFirst("div#all_advanced");
@@ -43,10 +48,9 @@ public class Scraper {
         // then add - +-, add that info to the TeamSeason object.
         // get the <tbody> from the split row, then each row after that needs to be parsed
         int lastIgnoredRow = tbodyLocation(splitRow);
-        int firstIgnoredRow = tbodyEndLocation(splitRow);
-        String[] playerSeasons = Arrays.copyOfRange(splitRow,lastIgnoredRow+1,firstIgnoredRow);
-        System.out.println(playerSeasons[0]);
-        System.out.println(playerSeasons[playerSeasons.length-1]);
+        int numPlayers = tbodyEndLocation(splitRow) - (lastIgnoredRow + 1);
+        String[] playerSeasons = new String[numPlayers];
+        System.arraycopy(splitRow,lastIgnoredRow + 1, playerSeasons, 0, numPlayers);
 
 //        String onOffLink = url + "/on-off/";
 //        final Document onOffDoc = Jsoup.connect(onOffLink).get();
@@ -57,6 +61,7 @@ public class Scraper {
         // so ignore the comment parts with the next lines and retrieve the real table.
     }
 
+    // helpers to find the line numbers that have tbody in a blob so the rest can be ignored
     private static int tbodyLocation (String[] htmlBlob) {
         for (int i = 0; i < htmlBlob.length; i++) {
             if (htmlBlob[i].contains("<tbody>")) {
@@ -73,5 +78,57 @@ public class Scraper {
             }
         }
         return -1;
+    }
+
+    // reads a text file for its line
+    private static List<String> readFile (String fileName) throws Exception {
+        String currLine;
+        ArrayList<String> blobs = new ArrayList<String>();
+        BufferedReader br = new BufferedReader(new FileReader(fileName));
+        while ((currLine = br.readLine()) != null) {
+            if (currLine.length() > 0) {
+                blobs.add(currLine);
+            }
+        }
+        return blobs;
+    }
+
+    private static void parseAdvanced (List<String> years) {
+        for (String year : years) {
+            Element row = Jsoup.parse(addSpaces(year));
+            String[] colVals = nonEmptyChildren(row.outerHtml().split("<body>\n {2}")[1].split("\n </body>")[0]);
+            for (String val : colVals) {
+                System.out.print(val + " ");
+            }
+            System.out.println();
+        }
+    }
+
+    // Adds spaces to a row's columns to allow the later parsing by split to be easier once JSoup's parser removes the junk.
+    private static String addSpaces (String row) {
+        char[] letters = row.toCharArray();
+        int j = 0; // Position in row
+        for (int i = 0; i < letters.length; i++, j++) {
+            if (letters[i] == '<' && i > 0 && letters[i-1] != '>') {
+                row = row.substring(0, j) + " " + row.substring(j);
+                j += 1;
+            }
+        }
+        return row;
+    }
+
+    // Removes new lines and tags in a string that was html, keeping spaces and tag's children.
+    private static String[] nonEmptyChildren(String blob) {
+        String[] lines = blob.split("\n");
+        String allLines = "";
+        for (String line : lines) {
+            allLines += line;
+        }
+        String[] children = allLines.split("<.*>");
+        String allChildren = "";
+        for (String child : children) {
+            allChildren += child;
+        }
+        return allChildren.split(" +");
     }
 }
