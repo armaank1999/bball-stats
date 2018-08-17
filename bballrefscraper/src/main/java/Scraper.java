@@ -5,6 +5,7 @@ import org.jsoup.nodes.Node;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class Scraper {
@@ -15,22 +16,7 @@ public class Scraper {
     public static final String baseTeamUrl = "https://www.basketball-reference.com/teams/";
 
     public static void main(String[] args) throws Exception {
-        if (args.length == 0) {
-            readSeasonLink("DEN", 2001);
-            return;
-        }
-        String fileName = args[0];
-        List<String> years = readFile(fileName);
-        TeamSeason mySeason = parseAdvanced("DEN", 2001, years);
-    }
-
-    private static void readPlayerLink(String url) throws Exception {
-        final Document document = Jsoup.connect(url).get();
-        Element statBlob = document.selectFirst("[role=main]");
-        Element advancedTable = statBlob.selectFirst("div#all_advanced");
-        Node comment = advancedTable.childNode(advancedTable.childNodeSize()-2);
-        System.out.println(comment.outerHtml());
-        // Unfortunately, it's wrapped in a comment for some reason.
+        readSeasonLink("DET", 2004);
     }
 
     private static void readSeasonLink(String team, int year) throws Exception {
@@ -51,14 +37,14 @@ public class Scraper {
         int numPlayers = tbodyEndLocation(splitRow) - (lastIgnoredRow + 1);
         String[] playerSeasons = new String[numPlayers];
         System.arraycopy(splitRow,lastIgnoredRow + 1, playerSeasons, 0, numPlayers);
+        TeamSeason parsedLink = parseAdvanced(team, year, new ArrayList<String>(Arrays.asList(playerSeasons)));
+        parsedLink.printAllInfo();
 
 //        String onOffLink = url + "/on-off/";
 //        final Document onOffDoc = Jsoup.connect(onOffLink).get();
 //        Element onOffWrapper = onOffDoc.selectFirst("div#all_on_off");
 //        Node onOffComment = onOffWrapper.childNode(advancedTable.childNodeSize()-2);
 //        System.out.println(onOffComment.outerHtml());
-        // Unfortunately, it's wrapped in a comment for some reason,
-        // so ignore the comment parts with the next lines and retrieve the real table.
     }
 
     // helpers to find the line numbers that have tbody in a blob so the rest can be ignored
