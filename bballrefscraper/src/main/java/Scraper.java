@@ -117,18 +117,23 @@ public class Scraper {
         return row;
     }
 
-    // Removes new lines and tags in a string that was html, keeping spaces and tag's children.
+    // Gets an array of all attributes that the row has.
     private static String[] nonEmptyChildren(String blob) {
         String[] lines = blob.split("\n");
         String allLines = "";
         for (String line : lines) {
             allLines += line;
         }
-        String[] children = allLines.split("<.*>");
+        String[] children = allLines.split("<.*?>");
+        String name = children[1].substring(0,children[1].length()-1);
         String allChildren = "";
-        for (String child : children) {
-            allChildren += child;
+        for (int i = 2; i <  children.length; i++) {
+            allChildren += children[i];
         }
-        return allChildren.split(" +");
+        String[] temp = allChildren.split(" +");
+        String[] returnee = new String[temp.length + 1];
+        System.arraycopy(temp,0,returnee,1,temp.length);
+        returnee[0] = name;
+        return returnee;
     }
 }
