@@ -15,11 +15,11 @@ public class SeasonParser {
             return;
         }
         String fileName = args[0];
-        SeasonList curr = readFile(fileName);
+        PlayerSeasonList curr = readFile(fileName);
         if (args.length > 1) {
             for (int i = 1; i < args.length; i++) {
                 fileName = args[i];
-                SeasonList next = readFile(fileName);
+                PlayerSeasonList next = readFile(fileName);
                 for (Season currentYear : next) {
                     currentYear.addElem("SPA", SPA(currentYear,
                             curr.getSeason((int) currentYear.getElem("Yr"))));
@@ -68,7 +68,7 @@ public class SeasonParser {
         return ATPA(pS, yA) + SPA(pS, yA) + MPA(pS, yA);
     }
 
-    private static SeasonList readFile(String fileName) {
+    private static PlayerSeasonList readFile(String fileName) {
         String line;
         String[] rowNames, currVals;
         List<Season> parsed = new ArrayList<>();
@@ -83,6 +83,6 @@ public class SeasonParser {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return new SeasonList(parsed);
+        return new PlayerSeasonList(parsed);
     }
 }

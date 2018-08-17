@@ -12,14 +12,14 @@ import java.util.List;
 import java.util.Iterator;
 import java.lang.Iterable;
 
-public class SeasonList implements Serializable, Iterable<Season> {
+public class PlayerSeasonList implements Serializable, Iterable<Season> {
     private static final long serialVersionUID = 945228L;
     private final List<Season> seasons;
     public int zeroIndexedSeason;
     public int lastIndexedSeason;
     private boolean increasing;
 
-    public SeasonList(List<Season> yrs) {
+    public PlayerSeasonList(List<Season> yrs) {
         seasons = yrs;
         zeroIndexedSeason = Integer.parseInt(yrs.get(0).name);
         increasing = Integer.parseInt(yrs.get(1).name) > zeroIndexedSeason;
@@ -46,13 +46,13 @@ public class SeasonList implements Serializable, Iterable<Season> {
         }
     }
 
-    public static SeasonList loadSeasonList(String name) {
+    public static PlayerSeasonList loadSeasonList(String name) {
         File f = new File("./" + name + ".txt");
         if (f.exists()) {
             try {
                 FileInputStream fs = new FileInputStream(f);
                 ObjectInputStream os = new ObjectInputStream(fs);
-                return (SeasonList) os.readObject();
+                return (PlayerSeasonList) os.readObject();
             } catch (FileNotFoundException e) {
                 System.out.println("file not found");
             } catch (IOException e) {

@@ -8,9 +8,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Scraper {
-    public static final String[] advancedRows = {"Blank", "Name", "Age", "G", "MP", "PER", "TS%", "3PAr", "FTr",
-        "ORB%", "DRB%", "TRB%", "AST%", "STL%", "BLK%", "TOV%", "USG%", "Blank", "OWS", "DWS", "WS", "WS/48",
-        "Blank", "OBPM", "DBPM", "BPM", "VORP"};
+    private static final String[] advancedRows = {"Age", "G", "MP", "PER", "TS%", "3PAr", "FTr",
+        "ORB%", "DRB%", "TRB%", "AST%", "STL%", "BLK%", "TOV%", "USG%", "OWS", "DWS", "WS", "WS/48",
+        "OBPM", "DBPM", "BPM", "VORP"};
 
     public static final String baseTeamUrl = "https://www.basketball-reference.com/teams/";
 
@@ -21,7 +21,7 @@ public class Scraper {
         }
         String fileName = args[0];
         List<String> years = readFile(fileName);
-        parseAdvanced(years);
+        TeamSeason mySeason = parseAdvanced("DEN", 2001, years);
     }
 
     private static void readPlayerLink(String url) throws Exception {
@@ -93,15 +93,23 @@ public class Scraper {
         return blobs;
     }
 
-    private static void parseAdvanced (List<String> years) {
-        for (String year : years) {
-            Element row = Jsoup.parse(addSpaces(year));
+    private static TeamSeason parseAdvanced (String team, int year, List<String> years) {
+        String[] names = new String[years.size()];
+        double[][] table = new double[years.size()][];
+        for (int i = 0; i < years.size(); i++) {
+            Element row = Jsoup.parse(addSpaces(years.get(i)));
             String[] colVals = nonEmptyChildren(row.outerHtml().split("<body>\n {2}")[1].split("\n </body>")[0]);
-            for (String val : colVals) {
-                System.out.print(val + " ");
+            String rowName = colVals[0];
+            double[] colAsNums = new double[colVals.length - 1];
+            for (int j = 0; j < colAsNums.length; j++) {
+                colAsNums[j] = Double.parseDouble(colVals[j + 1]);
             }
-            System.out.println();
+            names[i] = rowName;
+            table[i] = colAsNums;
         }
+        TeamSeason returnee = new TeamSeason(year, team);
+        returnee.addPlayers(advancedRows, names, table);
+        return returnee;
     }
 
     // Adds spaces to a row's columns to allow the later parsing by split to be easier once JSoup's parser removes the junk.
