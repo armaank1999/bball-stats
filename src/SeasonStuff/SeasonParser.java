@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SeasonParser {
-    public static final String CSVSPLITBY = ",";
+    private static final String CSV_SPLIT_BY = ",";
 
     public static void main(String[] args) {
         if (args.length == 0) {
@@ -75,9 +75,9 @@ public class SeasonParser {
         try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
             // Parse 1st line to get col names and # cols
             // 1st val must always be name/year so hash sets work properly
-            rowNames = br.readLine().split(CSVSPLITBY);
+            rowNames = br.readLine().split(CSV_SPLIT_BY);
             while ((line = br.readLine()) != null) {
-                currVals = line.split(CSVSPLITBY);
+                currVals = line.split(CSV_SPLIT_BY);
                 parsed.add(new Season(rowNames, currVals));
             }
         } catch (IOException e) {

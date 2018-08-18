@@ -1,3 +1,5 @@
+import java.io.File;
+import java.io.FileWriter;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
@@ -5,10 +7,13 @@ import java.util.LinkedHashMap;
 import java.util.Arrays;
 
 public class TeamSeason {
+    private static final String CSV_SPLIT_BY = ",";
+    private static final String NEW_LINE = "\n";
+
     private Map<String, List<Double>> playerSeasons;
     private List<String> colNames;
-    private int year;
-    private String team;
+    public int year;
+    public String team;
 
     public TeamSeason(int y, String t) {
         year = y;
@@ -61,6 +66,36 @@ public class TeamSeason {
             System.out.printf("%-8s", val);
         }
         System.out.println();
+    }
+
+    private String rowCSV(String name) {
+        StringBuilder line = new StringBuilder();
+        line.append(name);
+        line.append(CSV_SPLIT_BY);
+        List<Double> row = playerSeasons.get(name);
+        for (Double val : row) {
+            line.append(val);
+            line.append(CSV_SPLIT_BY);
+        }
+        line.append(NEW_LINE);
+        return line.toString();
+    }
+
+    public void saveFile() throws Exception {
+        File f = new File(team + year + ".csv");
+        FileWriter output = new FileWriter(f);
+        StringBuilder fileValue = new StringBuilder("Name,");
+        for (String col : colNames) {
+            fileValue.append(col);
+            fileValue.append(CSV_SPLIT_BY);
+        }
+        fileValue.append(NEW_LINE);
+        for (String name : playerSeasons.keySet()) {
+            fileValue.append(rowCSV(name));
+        }
+        output.append(fileValue);
+        output.flush();
+        output.close();
     }
 
 }

@@ -9,9 +9,8 @@ import java.util.Arrays;
 import java.util.List;
 
 public class Scraper {
-    private static final String[] advancedRows = {"Age", "G", "MP", "PER", "TS%", "3PAr", "FTr",
-        "ORB%", "DRB%", "TRB%", "AST%", "STL%", "BLK%", "TOV%", "USG%", "OWS", "DWS", "WS", "WS/48",
-        "OBPM", "DBPM", "BPM", "VORP"};
+    private static final String[] advancedRows = {"Age", "G", "MP", "PER", "TS%", "3PAr", "FTr", "ORB%", "DRB%", "TRB%",
+            "AST%", "STL%", "BLK%", "TOV%", "USG%", "OWS", "DWS", "WS", "WS/48", "OBPM", "DBPM", "BPM", "VORP"};
 
     public static final String baseTeamUrl = "https://www.basketball-reference.com/teams/";
 
@@ -39,6 +38,7 @@ public class Scraper {
         System.arraycopy(splitRow,lastIgnoredRow + 1, playerSeasons, 0, numPlayers);
         TeamSeason parsedLink = parseAdvanced(team, year, new ArrayList<String>(Arrays.asList(playerSeasons)));
         parsedLink.printAllInfo();
+        parsedLink.saveFile();
 
 //        String onOffLink = url + "/on-off/";
 //        final Document onOffDoc = Jsoup.connect(onOffLink).get();
@@ -98,7 +98,7 @@ public class Scraper {
         return returnee;
     }
 
-    // Adds spaces to a row's columns to allow the later parsing by split to be easier once JSoup's parser removes the junk.
+    // Adds spaces to a row's columns to allow the later parsing by split to be easier once JSoup's parser removes junk.
     private static String addSpaces (String row) {
         char[] letters = row.toCharArray();
         int j = 0; // Position in row
@@ -114,17 +114,17 @@ public class Scraper {
     // Gets an array of all attributes that the row has.
     private static String[] nonEmptyChildren(String blob) {
         String[] lines = blob.split("\n");
-        String allLines = "";
+        StringBuilder allLines = new StringBuilder();
         for (String line : lines) {
-            allLines += line;
+            allLines.append(line);
         }
-        String[] children = allLines.split("<.*?>");
+        String[] children = allLines.toString().split("<.*?>");
         String name = children[1].substring(0,children[1].length()-1);
-        String allChildren = "";
+        StringBuilder allChildren = new StringBuilder();
         for (int i = 2; i <  children.length; i++) {
-            allChildren += children[i];
+            allChildren.append(children[i]);
         }
-        String[] temp = allChildren.split(" +");
+        String[] temp = allChildren.toString().split(" +");
         String[] returnee = new String[temp.length + 1];
         System.arraycopy(temp,0,returnee,1,temp.length);
         returnee[0] = name;
