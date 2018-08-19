@@ -17,7 +17,18 @@ public class Scraper {
     public static final String baseTeamUrl = "https://www.basketball-reference.com/teams/";
 
     public static void main(String[] args) throws Exception {
-        readSeasonLink("CLE", 2009);
+        // readSeasonLink("CLE", 2009);
+        readOnOffLink("CLE",2009);
+    }
+
+    private static void readOnOffLink(String team, int year) throws Exception {
+        TeamSeason parsedInfo = new TeamSeason(year, team);
+        String ofOffLink = baseTeamUrl + team + "/" + year + "/on-off";
+        Document statsDoc = Jsoup.connect(ofOffLink).get();
+        Node onOffBlob = statsDoc.selectFirst("[role=main]").selectFirst("div#all_on_off");
+        String[] comment = onOffBlob.childNode(onOffBlob.childNodeSize()-2).outerHtml().split("[\\r\\n]+");
+
+        System.out.println(comment);
     }
 
     private static void readSeasonLink(String team, int year) throws Exception {
@@ -41,7 +52,16 @@ public class Scraper {
         return Arrays.asList(playerSeasons);
     }
 
-    // helpers to find the line numbers that have tbody in a blob so the rest can be ignored
+    // Get only the lines that are in the trs of a comment blob.
+    private static List<String> trSeasons(String[] allSeasons) {
+        int lastIgnoredRow = trhLocation(allSeasons);
+        int numPlayers = trhEndLocation(allSeasons) - (lastIgnoredRow + 1);
+        String[] playerSeasons = new String[numPlayers];
+        System.arraycopy(allSeasons,lastIgnoredRow + 1, playerSeasons, 0, numPlayers);
+        return Arrays.asList(playerSeasons);
+    }
+
+    // helpers to find line numbers so the rest can be ignored
     private static int tbodyLocation (String[] htmlBlob) {
         for (int i = 0; i < htmlBlob.length; i++) {
             if (htmlBlob[i].contains("<tbody>")) {
@@ -54,6 +74,24 @@ public class Scraper {
     private static int tbodyEndLocation (String[] htmlBlob) {
         for (int i = 0; i < htmlBlob.length; i++) {
             if (htmlBlob[i].contains("</tbody>")) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static int trhLocation (String[] htmlBlob) {
+        for (int i = 0; i < htmlBlob.length; i++) {
+            if (htmlBlob[i].startsWith("<tr ><th")) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static int trhEndLocation (String[] htmlBlob) {
+        for (int i = htmlBlob.length; i > 0; i--) {
+            if (htmlBlob[i].contains("</td></tr>")) {
                 return i;
             }
         }
