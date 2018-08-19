@@ -19,8 +19,9 @@ public class Scraper {
     }
 
     private static void readSeasonLink(String team, int year) throws Exception {
+        TeamSeason parsedInfo = new TeamSeason(year, team);
         String seasonLink = baseTeamUrl + team + "/" + year + ".html";
-        final Document statsDoc = Jsoup.connect(seasonLink).get();
+        Document statsDoc = Jsoup.connect(seasonLink).get();
         Element statBlob = statsDoc.selectFirst("[role=main]");
         Element advanced = statBlob.selectFirst("div#all_advanced");
         // Unfortunately, it's wrapped in a comment for some reason,
@@ -28,23 +29,19 @@ public class Scraper {
         Node advancedComment = advanced.childNode(advanced.childNodeSize()-2);
         String advancedCommentBlob = advancedComment.outerHtml();
         String[] splitRow = advancedCommentBlob.split("[\\r\\n]+");
-        // Extract the tr with all the necessary info using split, table col names are always the same
-        // so no need to extract them. Then put name, age, ..., in a TeamSeason object.
-        // then add - +-, add that info to the TeamSeason object.
-        // get the <tbody> from the split row, then each row after that needs to be parsed
-        int lastIgnoredRow = tbodyLocation(splitRow);
-        int numPlayers = tbodyEndLocation(splitRow) - (lastIgnoredRow + 1);
-        String[] playerSeasons = new String[numPlayers];
-        System.arraycopy(splitRow,lastIgnoredRow + 1, playerSeasons, 0, numPlayers);
-        TeamSeason parsedLink = parseAdvanced(team, year, new ArrayList<String>(Arrays.asList(playerSeasons)));
-        parsedLink.printAllInfo();
-        parsedLink.saveFile();
+        List<String> playerSeasons = tbodySeasons(splitRow);
+        parseAdvanced(parsedInfo, playerSeasons);
+        parsedInfo.printAllInfo();
+        parsedInfo.saveFile();
+    }
 
-//        String onOffLink = url + "/on-off/";
-//        final Document onOffDoc = Jsoup.connect(onOffLink).get();
-//        Element onOffWrapper = onOffDoc.selectFirst("div#all_on_off");
-//        Node onOffComment = onOffWrapper.childNode(advancedTable.childNodeSize()-2);
-//        System.out.println(onOffComment.outerHtml());
+    // Get only the lines that are in the tbody of a comment blob.
+    private static List<String> tbodySeasons(String[] allSeasons) {
+        int lastIgnoredRow = tbodyLocation(allSeasons);
+        int numPlayers = tbodyEndLocation(allSeasons) - (lastIgnoredRow + 1);
+        String[] playerSeasons = new String[numPlayers];
+        System.arraycopy(allSeasons,lastIgnoredRow + 1, playerSeasons, 0, numPlayers);
+        return Arrays.asList(playerSeasons);
     }
 
     // helpers to find the line numbers that have tbody in a blob so the rest can be ignored
@@ -79,7 +76,7 @@ public class Scraper {
         return blobs;
     }
 
-    private static TeamSeason parseAdvanced (String team, int year, List<String> years) {
+    private static void parseAdvanced (TeamSeason returnee, List<String> years) {
         String[] names = new String[years.size()];
         double[][] table = new double[years.size()][];
         for (int i = 0; i < years.size(); i++) {
@@ -93,9 +90,7 @@ public class Scraper {
             names[i] = rowName;
             table[i] = colAsNums;
         }
-        TeamSeason returnee = new TeamSeason(year, team);
         returnee.addPlayers(advancedRows, names, table);
-        return returnee;
     }
 
     // Adds spaces to a row's columns to allow the later parsing by split to be easier once JSoup's parser removes junk.
