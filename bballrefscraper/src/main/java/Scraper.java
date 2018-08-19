@@ -11,11 +11,13 @@ import java.util.List;
 public class Scraper {
     private static final String[] advancedRows = {"Age", "G", "MP", "PER", "TS%", "3PAr", "FTr", "ORB%", "DRB%", "TRB%",
             "AST%", "STL%", "BLK%", "TOV%", "USG%", "OWS", "DWS", "WS", "WS/48", "OBPM", "DBPM", "BPM", "VORP"};
+    private static final String[] per100Rows = {"Age", "G", "GS", "MP", "FG", "FGA", "FG%", "3P", "3PA", "3P%", "2P", "2PA", "2P%",
+            "FT", "FTA", "FT%", "ORB", "DRB", "TRB", "AST", "STL", "BLK", "TOV", "PF", "PTS", "ORtg", "DRtg"};
 
     public static final String baseTeamUrl = "https://www.basketball-reference.com/teams/";
 
     public static void main(String[] args) throws Exception {
-        readSeasonLink("DET", 2004);
+        readSeasonLink("CLE", 2009);
     }
 
     private static void readSeasonLink(String team, int year) throws Exception {
@@ -23,14 +25,9 @@ public class Scraper {
         String seasonLink = baseTeamUrl + team + "/" + year + ".html";
         Document statsDoc = Jsoup.connect(seasonLink).get();
         Element statBlob = statsDoc.selectFirst("[role=main]");
-        Element advanced = statBlob.selectFirst("div#all_advanced");
-        // Unfortunately, it's wrapped in a comment for some reason,
-        // so ignore the comment parts with the next lines and retrieve the real table.
-        Node advancedComment = advanced.childNode(advanced.childNodeSize()-2);
-        String advancedCommentBlob = advancedComment.outerHtml();
-        String[] splitRow = advancedCommentBlob.split("[\\r\\n]+");
-        List<String> playerSeasons = tbodySeasons(splitRow);
-        parseAdvanced(parsedInfo, playerSeasons);
+        addRows(parsedInfo, tableRows(statBlob, "div#all_per_poss"), per100Rows);
+        addRows(parsedInfo, tableRows(statBlob, "div#all_advanced"), advancedRows);
+        parsedInfo.deleteCols(new String[]{"Age", "G", "GS", "MP", "TOV%", "OWS", "DWS", "OBPM", "DBPM", "TRB", "PER", "TRB%", "PF"});
         parsedInfo.printAllInfo();
         parsedInfo.saveFile();
     }
@@ -76,7 +73,7 @@ public class Scraper {
         return blobs;
     }
 
-    private static void parseAdvanced (TeamSeason returnee, List<String> years) {
+    private static void addRows(TeamSeason returnee, List<String> years, String[] colNames) {
         String[] names = new String[years.size()];
         double[][] table = new double[years.size()][];
         for (int i = 0; i < years.size(); i++) {
@@ -90,7 +87,7 @@ public class Scraper {
             names[i] = rowName;
             table[i] = colAsNums;
         }
-        returnee.addPlayers(advancedRows, names, table);
+        returnee.addPlayers(colNames, names, table);
     }
 
     // Adds spaces to a row's columns to allow the later parsing by split to be easier once JSoup's parser removes junk.
@@ -124,5 +121,12 @@ public class Scraper {
         System.arraycopy(temp,0,returnee,1,temp.length);
         returnee[0] = name;
         return returnee;
+    }
+
+    // Finds all the rows of a table with a certain identifier by seeking out its commented out version
+    // and then finding only the important rows and splitting them into a list.
+    private static List<String> tableRows(Element container, String tableSelector) {
+        Node comment = container.selectFirst(tableSelector);
+        return tbodySeasons(comment.childNode(comment.childNodeSize()-2).outerHtml().split("[\\r\\n]+"));
     }
 }

@@ -98,13 +98,19 @@ public class TeamSeason {
         output.close();
     }
 
-    public void deleteCol(String colName) {
-        int index = colNames.indexOf(colName);
+    private void deleteCol(String colName) {
+        int index = colNames.lastIndexOf(colName);
         if (index != -1) {
             colNames.remove(index);
             for (List season : playerSeasons.values()) {
                 season.remove(index);
             }
+        }
+    }
+
+    public void deleteCols(String[] cols) {
+        for (String name : cols) {
+            deleteCol(name);
         }
     }
 
