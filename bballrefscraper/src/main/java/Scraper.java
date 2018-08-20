@@ -13,68 +13,48 @@ public class Scraper {
             "AST%", "STL%", "BLK%", "TOV%", "USG%", "OWS", "DWS", "WS", "WS/48", "OBPM", "DBPM", "BPM", "VORP"};
     private static final String[] per100Rows = {"Age", "G", "GS", "MP", "FG", "FGA", "FG%", "3P", "3PA", "3P%", "2P", "2PA", "2P%",
             "FT", "FTA", "FT%", "ORB", "DRB", "TRB", "AST", "STL", "BLK", "TOV", "PF", "PTS", "ORtg", "DRtg"};
-    private static final String[] onOffRows = {"%MP", "+-TmEFG%", "+-TmORB%", "+-TmDRB%", "+-TmAST%", "+-TmSTL%",
-            "+-TmBLK%", "+-TmTOV%", "+-TmPace", "+-TmORtg", "+-OppEFG%", "+-OppORB%", "+-OppDRB%", "+-OppAST%", "+-OppSTL%",
-            "+-OppBLK%", "+-OppTOV%", "+-OppPace", "+-OppORtg", "+-NetEFG%", "+-NetORB%", "+-NetDRB%", "+-NetAST%", "+-NetSTL%",
-            "+-NetBLK%", "+-NetTOV%", "+-NetPace", "+-NetRtg"};
+    private static final String[] onOffRows = {"%MP", "+-TmEFG%", "+-TmORB%", "+-TmDRB%", "+-TmTRB%", "+-TmAST%", "+-TmSTL%",
+            "+-TmBLK%", "+-TmTOV%", "+-TmPace", "+-TmORtg", "+-OpEFG%", "+-OpORB%", "+-OpDRB%", "+-OpTRB%", "+-OpAST%", "+-OpSTL%",
+            "+-OpBLK%", "+-OpTOV%", "+-OpPace", "+-OpORtg", "+-NtEFG%", "+-NtORB%", "+-NtDRB%", "+-NtTRB%", "+-NtAST%", "+-NtSTL%",
+            "+-NtBLK%", "+-NtTOV%", "+-NtPace", "+-NtRtg"};
     // Rows from advanced that are not needed.
-    private static final String[] advancedIgnorees = {"PER", "TRB%", "OWS", "DWS", "OBPM", "DBPM", "VORP"};
+    private static final String[] advancedIgnorees = {"VORP", "DBPM", "OBPM", "DWS", "OWS", "TRB%", "PER"};
     // Includes the duplicates with advanced and the per 100 we don't want.
-    private static final String[] per100Ignorees = {"Age", "G", "GS", "MP", "PF", "TRB", "ORB", "DRB"};
+    private static final String[] per100Ignorees = {"PF", "TRB", "ORB", "DRB", "MP", "GS", "G", "Age"};
     // All the cols we don't want from the on-off table, since there are a ton.
-    private static final String[] onOffIgnorees = {};
+    private static final String[] onOffIgnorees = {"+-NtRtg", "+-NtPace", "+-NtTOV%", "+-NtEFG%", "+-NtBLK%",
+            "+-NtSTL%", "+-NtAST%", "+-NtTRB%", "+-NtDRB%", "+-NtORB%", "+-NtEFG%", "+-OpPace", "+-TmPace"};
 
     public static final String baseTeamUrl = "https://www.basketball-reference.com/teams/";
 
     public static void main(String[] args) throws Exception {
-//        readSeasonLink("CLE", 2009);
-        readOnOffLink("LAL",2009);
+        parseSeason("GSW",2016);
     }
 
-    private static void readOnOffLink(String team, int year) throws Exception {
+    private static void parseSeason(String team, int year) throws Exception {
         TeamSeason parsedInfo = new TeamSeason(year, team);
-        String ofOffLink = baseTeamUrl + team + "/" + year + "/on-off";
+        readSeasonLink(parsedInfo);
+        readOnOffLink(parsedInfo);
+        parsedInfo.saveFile();
+    }
+
+    private static void readOnOffLink(TeamSeason szn) throws Exception {
+        String ofOffLink = baseTeamUrl + szn.team + "/" + szn.year + "/on-off";
         Document statsDoc = Jsoup.connect(ofOffLink).get();
         Node onOffBlob = statsDoc.selectFirst("[role=main]").selectFirst("div#all_on_off");
         String[] comment = trSeasons(onOffBlob.childNode(onOffBlob.childNodeSize()-2).outerHtml().split("[\\r\\n]+"));
-        String[] names = new String[comment.length/3];
-        double[][] colVals = new double[comment.length/3][];
-        for (int i = 0; i < comment.length; i+=3) {
-            names[i/3] = comment[i].split(".*html\">")[1].split("<")[0];
-            List<String> allSplitRows = new ArrayList<String>(Arrays.asList(comment[i+2].split("<.*?>")));
-            for (int j = allSplitRows.size() - 1; j >= 0; j--) {
-                if (allSplitRows.get(j).equals("")) {
-                    allSplitRows.remove(j);
-                }
-            }
-            allSplitRows.remove(0);
-            String[] realValues = allSplitRows.toArray(new String[0]);
-            double[] trulyParsedValues = new double[realValues.length];
-            trulyParsedValues[0] = Double.parseDouble(realValues[0].substring(0,realValues[0].length()-1));
-            for (int k = 1; k < realValues.length; k++) {
-                String parsee = realValues[k];
-                if (parsee.startsWith("+")) {
-                    trulyParsedValues[k] = Double.parseDouble(parsee.substring(1));
-                } else {
-                    trulyParsedValues[k] = Double.parseDouble(parsee);
-                }
-            }
-            colVals[i/3] = trulyParsedValues;
-        }
-        parsedInfo.addPlayers(onOffRows, names, colVals);
-        parsedInfo.printAllInfo();
-        parsedInfo.saveFile();
+        addOnOffRows(szn, comment);
+        szn.deleteCols(onOffIgnorees);
     }
 
-    private static void readSeasonLink(String team, int year) throws Exception {
-        TeamSeason parsedInfo = new TeamSeason(year, team);
-        String seasonLink = baseTeamUrl + team + "/" + year + ".html";
+    private static void readSeasonLink(TeamSeason szn) throws Exception {
+        String seasonLink = baseTeamUrl + szn.team + "/" + szn.year + ".html";
         Document statsDoc = Jsoup.connect(seasonLink).get();
         Element statBlob = statsDoc.selectFirst("[role=main]");
-        // addRows(parsedInfo, tableRows(statBlob, "div#all_per_poss"), per100Rows);
-        addRows(parsedInfo, tableRows(statBlob, "div#all_advanced"), advancedRows, advancedIgnorees);
-        parsedInfo.printAllInfo();
-        parsedInfo.saveFile();
+        addRows(szn, tableRows(statBlob, "div#all_advanced"), advancedRows);
+        szn.deleteCols(advancedIgnorees);
+        // addRows(szn, tableRows(statBlob, "div#all_per_poss"), per100Rows);
+        // szn.deleteCols(per100Ignorees);
     }
 
     // Get only the lines that are in the tbody of a comment blob.
@@ -101,7 +81,7 @@ public class Scraper {
         return removableSeasonList.toArray(new String[0]);
     }
 
-    // helpers to find line numbers so the rest can be ignored
+    // helpers to find line numbers so the rest can be ignored, and then the relevant rows are parsed
     private static int tbodyLocation (String[] htmlBlob) {
         for (int i = 0; i < htmlBlob.length; i++) {
             if (htmlBlob[i].contains("<tbody>")) {
@@ -112,7 +92,7 @@ public class Scraper {
     }
 
     private static int tbodyEndLocation (String[] htmlBlob) {
-        for (int i = 0; i < htmlBlob.length; i++) {
+        for (int i = htmlBlob.length - 1; i > 0; i--) {
             if (htmlBlob[i].contains("</tbody>")) {
                 return i;
             }
@@ -151,7 +131,8 @@ public class Scraper {
         return blobs;
     }
 
-    private static void addRows(TeamSeason returnee, String[] years, String[] colNames, String[] deletees) {
+    // functions to take the rows, parse them properly, and then add their info to the szn
+    private static void addRows(TeamSeason szn, String[] years, String[] colNames) {
         String[] names = new String[years.length];
         double[][] table = new double[years.length][];
         for (int i = 0; i < years.length; i++) {
@@ -165,8 +146,35 @@ public class Scraper {
             names[i] = rowName;
             table[i] = colAsNums;
         }
-        returnee.addPlayers(colNames, names, table);
-        returnee.deleteCols(deletees);
+        szn.addPlayers(colNames, names, table);
+    }
+
+    private static void addOnOffRows(TeamSeason szn, String[] rows) {
+        String[] names = new String[rows.length/3];
+        double[][] colVals = new double[rows.length/3][];
+        for (int i = 0; i < rows.length; i+=3) {
+            names[i/3] = rows[i].split(".*html\">")[1].split("<")[0];
+            List<String> allSplitRows = new ArrayList<String>(Arrays.asList(rows[i+2].split("<.*?>")));
+            for (int j = allSplitRows.size() - 1; j >= 0; j--) {
+                if (allSplitRows.get(j).equals("")) {
+                    allSplitRows.remove(j);
+                }
+            }
+            allSplitRows.remove(0);
+            String[] realValues = allSplitRows.toArray(new String[0]);
+            double[] trulyParsedValues = new double[realValues.length];
+            trulyParsedValues[0] = Double.parseDouble(realValues[0].substring(0,realValues[0].length()-1));
+            for (int k = 1; k < realValues.length; k++) {
+                String parsee = realValues[k];
+                if (parsee.startsWith("+")) {
+                    trulyParsedValues[k] = Double.parseDouble(parsee.substring(1));
+                } else {
+                    trulyParsedValues[k] = Double.parseDouble(parsee);
+                }
+            }
+            colVals[i/3] = trulyParsedValues;
+        }
+        szn.addPlayers(onOffRows, names, colVals);
     }
 
     // Adds spaces to a row's columns to allow the later parsing by split to be easier once JSoup's parser removes junk.
