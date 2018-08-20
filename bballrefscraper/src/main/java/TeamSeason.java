@@ -119,4 +119,19 @@ public class TeamSeason {
         while (deleteCol("")) {}
     }
 
+    public void normalize(String colName) {
+        double total = 0.0;
+        double totalMinutes = 0.0;
+        int colPos = colNames.indexOf(colName);
+        int minutesPos = colNames.indexOf("MP");
+        for (List<Double> row : playerSeasons.values()) {
+            totalMinutes += row.get(minutesPos);
+            total += row.get(colPos) * row.get(minutesPos);
+        }
+        double average = 5*total/totalMinutes;
+        for (List<Double> row : playerSeasons.values()) {
+            row.set(colPos, row.get(colPos) - average);
+        }
+    }
+
 }

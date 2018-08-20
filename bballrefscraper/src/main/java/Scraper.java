@@ -17,13 +17,18 @@ public class Scraper {
             "+-TmBLK%", "+-TmTOV%", "+-TmPace", "+-TmORtg", "+-OppEFG%", "+-OppORB%", "+-OppDRB%", "+-OppAST%", "+-OppSTL%",
             "+-OppBLK%", "+-OppTOV%", "+-OppPace", "+-OppORtg", "+-NetEFG%", "+-NetORB%", "+-NetDRB%", "+-NetAST%", "+-NetSTL%",
             "+-NetBLK%", "+-NetTOV%", "+-NetPace", "+-NetRtg"};
-    private static final String[] ignorers = {};
+    // Rows from advanced that are not needed.
+    private static final String[] advancedIgnorees = {"PER", "TRB%", "OWS", "DWS", "OBPM", "DBPM", "VORP"};
+    // Includes the duplicates with advanced and the per 100 we don't want.
+    private static final String[] per100Ignorees = {"Age", "G", "GS", "MP", "PF", "TRB", "ORB", "DRB"};
+    // All the cols we don't want from the on-off table, since there are a ton.
+    private static final String[] onOffIgnorees = {};
 
     public static final String baseTeamUrl = "https://www.basketball-reference.com/teams/";
 
     public static void main(String[] args) throws Exception {
 //        readSeasonLink("CLE", 2009);
-        readOnOffLink("CLE",2009);
+        readOnOffLink("LAL",2009);
     }
 
     private static void readOnOffLink(String team, int year) throws Exception {
@@ -32,9 +37,33 @@ public class Scraper {
         Document statsDoc = Jsoup.connect(ofOffLink).get();
         Node onOffBlob = statsDoc.selectFirst("[role=main]").selectFirst("div#all_on_off");
         String[] comment = trSeasons(onOffBlob.childNode(onOffBlob.childNodeSize()-2).outerHtml().split("[\\r\\n]+"));
-        for (String line : comment) {
-            System.out.println(line);
+        String[] names = new String[comment.length/3];
+        double[][] colVals = new double[comment.length/3][];
+        for (int i = 0; i < comment.length; i+=3) {
+            names[i/3] = comment[i].split(".*html\">")[1].split("<")[0];
+            List<String> allSplitRows = new ArrayList<String>(Arrays.asList(comment[i+2].split("<.*?>")));
+            for (int j = allSplitRows.size() - 1; j >= 0; j--) {
+                if (allSplitRows.get(j).equals("")) {
+                    allSplitRows.remove(j);
+                }
+            }
+            allSplitRows.remove(0);
+            String[] realValues = allSplitRows.toArray(new String[0]);
+            double[] trulyParsedValues = new double[realValues.length];
+            trulyParsedValues[0] = Double.parseDouble(realValues[0].substring(0,realValues[0].length()-1));
+            for (int k = 1; k < realValues.length; k++) {
+                String parsee = realValues[k];
+                if (parsee.startsWith("+")) {
+                    trulyParsedValues[k] = Double.parseDouble(parsee.substring(1));
+                } else {
+                    trulyParsedValues[k] = Double.parseDouble(parsee);
+                }
+            }
+            colVals[i/3] = trulyParsedValues;
         }
+        parsedInfo.addPlayers(onOffRows, names, colVals);
+        parsedInfo.printAllInfo();
+        parsedInfo.saveFile();
     }
 
     private static void readSeasonLink(String team, int year) throws Exception {
@@ -42,9 +71,8 @@ public class Scraper {
         String seasonLink = baseTeamUrl + team + "/" + year + ".html";
         Document statsDoc = Jsoup.connect(seasonLink).get();
         Element statBlob = statsDoc.selectFirst("[role=main]");
-        addRows(parsedInfo, tableRows(statBlob, "div#all_per_poss"), per100Rows);
-        addRows(parsedInfo, tableRows(statBlob, "div#all_advanced"), advancedRows);
-        parsedInfo.deleteCols(new String[]{"Age", "G", "GS", "MP", "TOV%", "OWS", "DWS", "OBPM", "DBPM", "TRB", "PER", "TRB%", "PF"});
+        // addRows(parsedInfo, tableRows(statBlob, "div#all_per_poss"), per100Rows);
+        addRows(parsedInfo, tableRows(statBlob, "div#all_advanced"), advancedRows, advancedIgnorees);
         parsedInfo.printAllInfo();
         parsedInfo.saveFile();
     }
@@ -123,12 +151,12 @@ public class Scraper {
         return blobs;
     }
 
-    private static void addRows(TeamSeason returnee, String[] years, String[] colNames) {
+    private static void addRows(TeamSeason returnee, String[] years, String[] colNames, String[] deletees) {
         String[] names = new String[years.length];
         double[][] table = new double[years.length][];
         for (int i = 0; i < years.length; i++) {
             Element row = Jsoup.parse(addSpaces(years[i]));
-            String[] colVals = nonEmptyChildren(row.outerHtml().split("<body>\n {2}")[1].split("\n </body>")[0]);
+            String[] colVals = relevantChildren(row.outerHtml().split("<body>\n {2}")[1].split("\n </body>")[0]);
             String rowName = colVals[0];
             double[] colAsNums = new double[colVals.length - 1];
             for (int j = 0; j < colAsNums.length; j++) {
@@ -138,6 +166,7 @@ public class Scraper {
             table[i] = colAsNums;
         }
         returnee.addPlayers(colNames, names, table);
+        returnee.deleteCols(deletees);
     }
 
     // Adds spaces to a row's columns to allow the later parsing by split to be easier once JSoup's parser removes junk.
@@ -156,7 +185,7 @@ public class Scraper {
     // Gets an array of all attributes that the row has.
     // TODO: fix the fact undefined values don't get added. So don't remove empties? Then put blank
     // in the col names, and delete blank cols as many times as necessary afterwards
-    private static String[] nonEmptyChildren(String blob) {
+    private static String[] relevantChildren(String blob) {
         String[] lines = blob.split("\n");
         StringBuilder allLines = new StringBuilder();
         for (String line : lines) {
