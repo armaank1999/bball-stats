@@ -9,13 +9,12 @@ import java.util.Arrays;
 public class TeamSeason {
     private static final String CSV_SPLIT_BY = ",";
     private static final String NEW_LINE = "\n";
-
+    public final String team;
+    public final int year;
     private Map<String, List<Double>> playerSeasons;
     private List<String> colNames;
-    public int year;
-    public String team;
 
-    public TeamSeason(int y, String t) {
+    public TeamSeason(String t, int y) {
         year = y;
         team = t;
         playerSeasons = new LinkedHashMap<String, List<Double>>();
@@ -38,9 +37,9 @@ public class TeamSeason {
 
     public void printAllInfo() {
         System.out.println("Parsed from " + url());
-        System.out.printf("%-25s","Name");
+        System.out.printf("%-25s", "Name");
         for (String colName : colNames) {
-            System.out.printf("%-8s", colName);
+            System.out.printf("%-9s", colName);
         }
         System.out.println();
         for (String key : playerSeasons.keySet()) {
@@ -63,7 +62,7 @@ public class TeamSeason {
         System.out.printf("%-25s", name);
         List<Double> row = playerSeasons.get(name);
         for (Double val : row) {
-            System.out.printf("%-8s", val);
+            System.out.printf("%-9s", val);
         }
         System.out.println();
     }
@@ -116,21 +115,57 @@ public class TeamSeason {
     }
 
     public void deleteBlankCols() {
-        while (deleteCol("")) {}
+        while (deleteCol("")) {
+        }
     }
 
-    public void normalize(String colName) {
+    public void normalize(int colPos) {
         double total = 0.0;
         double totalMinutes = 0.0;
-        int colPos = colNames.indexOf(colName);
         int minutesPos = colNames.indexOf("MP");
         for (List<Double> row : playerSeasons.values()) {
             totalMinutes += row.get(minutesPos);
             total += row.get(colPos) * row.get(minutesPos);
         }
-        double average = 5*total/totalMinutes;
+        double average = 5 * total / totalMinutes;
         for (List<Double> row : playerSeasons.values()) {
             row.set(colPos, row.get(colPos) - average);
+        }
+    }
+
+    public void addAdjustments() {
+        addReboundingAdjustment();
+        addOnOffAdjustment();
+    }
+
+    private void addReboundingAdjustment() {
+        int percentIndex = colNames.indexOf("%MP");
+        int gamesIndex = colNames.indexOf("G");
+        int orbIndex = colNames.indexOf("ORB%");
+        int drbIndex = colNames.indexOf("DRB%");
+        int netORBIndex = colNames.indexOf("+-TmORB%");
+        int netDRBIndex = colNames.indexOf("+-TmDRB%");
+        int adjIndex = colNames.size();
+        colNames.add("RBAdj");
+        for (List<Double> row : playerSeasons.values()) {
+            double weight = row.get(percentIndex) * row.get(percentIndex) / 10000;
+            double value = 0.0;
+            row.set(adjIndex, value * weight);
+        }
+
+    }
+
+    private void addOnOffAdjustment() {
+        int percentIndex = colNames.indexOf("%MP");
+        int gamesIndex = colNames.indexOf("G");
+        int offenseOnOffIndex = colNames.indexOf("+-TmORtg");
+        int defenseOnOffIndex = colNames.indexOf("+-OpORtg");
+        int adjIndex = colNames.size();
+        colNames.add("+-Adj");
+        for (List<Double> row : playerSeasons.values()) {
+            double weight = row.get(gamesIndex) * row.get(percentIndex) * row.get(percentIndex) / 820000;
+            double value = 0.0;
+            row.set(adjIndex, value * weight);
         }
     }
 

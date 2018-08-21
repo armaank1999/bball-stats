@@ -2,6 +2,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.ArrayList;
@@ -9,51 +10,57 @@ import java.util.Arrays;
 import java.util.List;
 
 public class Scraper {
-    private static final String[] advancedRows = {"Age", "G", "MP", "PER", "TS%", "3PAr", "FTr", "ORB%", "DRB%", "TRB%",
+    // The common portion of the url from everywhere we read from.
+    public static final String baseTeamUrl = "https://www.basketball-reference.com/teams/";
+    // A representation of the colNames of each respective table.
+    private static final String[] advancedCols = {"Age", "G", "MP", "PER", "TS%", "3PAr", "FTr", "ORB%", "DRB%", "TRB%",
             "AST%", "STL%", "BLK%", "TOV%", "USG%", "OWS", "DWS", "WS", "WS/48", "OBPM", "DBPM", "BPM", "VORP"};
-    private static final String[] per100Rows = {"Age", "G", "GS", "MP", "FG", "FGA", "FG%", "3P", "3PA", "3P%", "2P", "2PA", "2P%",
+    private static final String[] per100Cols = {"Age", "G", "GS", "MP", "FG", "FGA", "FG%", "3P", "3PA", "3P%", "2P", "2PA", "2P%",
             "FT", "FTA", "FT%", "ORB", "DRB", "TRB", "AST", "STL", "BLK", "TOV", "PF", "PTS", "ORtg", "DRtg"};
-    private static final String[] onOffRows = {"%MP", "+-TmEFG%", "+-TmORB%", "+-TmDRB%", "+-TmTRB%", "+-TmAST%", "+-TmSTL%",
+    private static final String[] onOffCols = {"%MP", "+-TmEFG%", "+-TmORB%", "+-TmDRB%", "+-TmTRB%", "+-TmAST%", "+-TmSTL%",
             "+-TmBLK%", "+-TmTOV%", "+-TmPace", "+-TmORtg", "+-OpEFG%", "+-OpORB%", "+-OpDRB%", "+-OpTRB%", "+-OpAST%", "+-OpSTL%",
             "+-OpBLK%", "+-OpTOV%", "+-OpPace", "+-OpORtg", "+-NtEFG%", "+-NtORB%", "+-NtDRB%", "+-NtTRB%", "+-NtAST%", "+-NtSTL%",
             "+-NtBLK%", "+-NtTOV%", "+-NtPace", "+-NtRtg"};
-    // Rows from advanced that are not needed.
+    // Cols from advanced table that are not needed.
     private static final String[] advancedIgnorees = {"VORP", "DBPM", "OBPM", "DWS", "OWS", "TRB%", "PER"};
     // Includes the duplicates with advanced and the per 100 we don't want.
     private static final String[] per100Ignorees = {"PF", "TRB", "ORB", "DRB", "MP", "GS", "G", "Age"};
     // All the cols we don't want from the on-off table, since there are a ton.
-    private static final String[] onOffIgnorees = {"+-NtRtg", "+-NtPace", "+-NtTOV%", "+-NtEFG%", "+-NtBLK%",
-            "+-NtSTL%", "+-NtAST%", "+-NtTRB%", "+-NtDRB%", "+-NtORB%", "+-NtEFG%", "+-OpPace", "+-TmPace"};
-
-    public static final String baseTeamUrl = "https://www.basketball-reference.com/teams/";
+    private static final String[] onOffIgnorees = {"+-NtRtg", "+-NtPace", "+-NtTOV%", "+-NtEFG%", "+-NtBLK%", "+-NtSTL%", "+-NtAST%",
+            "+-NtTRB%", "+-NtDRB%", "+-NtORB%", "+-NtEFG%", "+-OpBLK%", "+-OpSTL%", "+-OpAST%", "+-OpTRB%", "+-OpDRB%", "+-OpORB%",
+            "+-OpPace", "+-TmTRB%", "+-TmBLK%", "+-TmSTL%", "+-TmAST%", "+-TmPace"};
 
     public static void main(String[] args) throws Exception {
-        parseSeason("GSW",2016);
+        parseSeason("GSW", 2016);
     }
 
     private static void parseSeason(String team, int year) throws Exception {
-        TeamSeason parsedInfo = new TeamSeason(year, team);
+        TeamSeason parsedInfo = new TeamSeason(team, year);
         readSeasonLink(parsedInfo);
         readOnOffLink(parsedInfo);
-        parsedInfo.saveFile();
+        parsedInfo.printAllInfo();
+        //parsedInfo.saveFile();
     }
 
     private static void readOnOffLink(TeamSeason szn) throws Exception {
+        // First find the url and table we want. Find the real content of the table with our helper.
+        // Then call our add rows helper to add the rows and remove the ones we don't want.
         String ofOffLink = baseTeamUrl + szn.team + "/" + szn.year + "/on-off";
         Document statsDoc = Jsoup.connect(ofOffLink).get();
         Node onOffBlob = statsDoc.selectFirst("[role=main]").selectFirst("div#all_on_off");
-        String[] comment = trSeasons(onOffBlob.childNode(onOffBlob.childNodeSize()-2).outerHtml().split("[\\r\\n]+"));
-        addOnOffRows(szn, comment);
+        addOnOffRows(szn, trSeasons(onOffBlob.childNode(onOffBlob.childNodeSize() - 2).outerHtml().split("[\\r\\n]+")));
         szn.deleteCols(onOffIgnorees);
     }
 
     private static void readSeasonLink(TeamSeason szn) throws Exception {
+        // First find the url and table we want. Find the real content of the table(s) with our helper.
+        // Then call our add rows helper to add the rows and remove the ones we don't want.
         String seasonLink = baseTeamUrl + szn.team + "/" + szn.year + ".html";
         Document statsDoc = Jsoup.connect(seasonLink).get();
         Element statBlob = statsDoc.selectFirst("[role=main]");
-        addRows(szn, tableRows(statBlob, "div#all_advanced"), advancedRows);
+        addRows(szn, tableRows(statBlob, "div#all_advanced"), advancedCols);
         szn.deleteCols(advancedIgnorees);
-        // addRows(szn, tableRows(statBlob, "div#all_per_poss"), per100Rows);
+        // addRows(szn, tableRows(statBlob, "div#all_per_poss"), per100Cols);
         // szn.deleteCols(per100Ignorees);
     }
 
@@ -62,16 +69,18 @@ public class Scraper {
         int firstRow = tbodyLocation(allSeasons) + 1;
         int numPlayers = tbodyEndLocation(allSeasons) - firstRow;
         String[] playerSeasons = new String[numPlayers];
-        System.arraycopy(allSeasons,firstRow, playerSeasons, 0, numPlayers);
+        System.arraycopy(allSeasons, firstRow, playerSeasons, 0, numPlayers);
         return playerSeasons;
     }
 
     // Get only the lines that are in the trs of a comment blob.
     private static String[] trSeasons(String[] allSeasons) {
+        // First get all the rows that are actually in the table.
         int lastIgnoredRow = trhLocation(allSeasons);
         int numPlayers = trhEndLocation(allSeasons) - lastIgnoredRow + 1;
         String[] playerSeasons = new String[numPlayers];
         System.arraycopy(allSeasons, lastIgnoredRow, playerSeasons, 0, numPlayers);
+        // Now remove all the additional headers that are in between actual rows.
         List<String> removableSeasonList = new ArrayList<String>(Arrays.asList(playerSeasons));
         for (int i = removableSeasonList.size() - 4; i > 0; i--) {
             if (removableSeasonList.get(i).startsWith(" ") || removableSeasonList.get(i).startsWith("<tr class=\"thead\"><td")) {
@@ -82,7 +91,7 @@ public class Scraper {
     }
 
     // helpers to find line numbers so the rest can be ignored, and then the relevant rows are parsed
-    private static int tbodyLocation (String[] htmlBlob) {
+    private static int tbodyLocation(String[] htmlBlob) {
         for (int i = 0; i < htmlBlob.length; i++) {
             if (htmlBlob[i].contains("<tbody>")) {
                 return i;
@@ -91,7 +100,7 @@ public class Scraper {
         return -1;
     }
 
-    private static int tbodyEndLocation (String[] htmlBlob) {
+    private static int tbodyEndLocation(String[] htmlBlob) {
         for (int i = htmlBlob.length - 1; i > 0; i--) {
             if (htmlBlob[i].contains("</tbody>")) {
                 return i;
@@ -100,7 +109,7 @@ public class Scraper {
         return -1;
     }
 
-    private static int trhLocation (String[] htmlBlob) {
+    private static int trhLocation(String[] htmlBlob) {
         for (int i = 0; i < htmlBlob.length; i++) {
             if (htmlBlob[i].startsWith("<tr ><th")) {
                 return i;
@@ -109,7 +118,7 @@ public class Scraper {
         return -1;
     }
 
-    private static int trhEndLocation (String[] htmlBlob) {
+    private static int trhEndLocation(String[] htmlBlob) {
         for (int i = htmlBlob.length - 1; i > 0; i--) {
             if (htmlBlob[i].contains("</td></tr>")) {
                 return i;
@@ -119,7 +128,7 @@ public class Scraper {
     }
 
     // reads a text file for its line
-    private static List<String> readFile (String fileName) throws Exception {
+    private static List<String> readFile(String fileName) throws Exception {
         String currLine;
         ArrayList<String> blobs = new ArrayList<String>();
         BufferedReader br = new BufferedReader(new FileReader(fileName));
@@ -136,6 +145,8 @@ public class Scraper {
         String[] names = new String[years.length];
         double[][] table = new double[years.length][];
         for (int i = 0; i < years.length; i++) {
+            // TODO: figure out a way to avoid this method of adding spaces and then calling relevantChildren
+            // as that messes up when cols are actually empty (e.g. Ben Wallace 3p%)
             Element row = Jsoup.parse(addSpaces(years[i]));
             String[] colVals = relevantChildren(row.outerHtml().split("<body>\n {2}")[1].split("\n </body>")[0]);
             String rowName = colVals[0];
@@ -150,20 +161,26 @@ public class Scraper {
     }
 
     private static void addOnOffRows(TeamSeason szn, String[] rows) {
-        String[] names = new String[rows.length/3];
-        double[][] colVals = new double[rows.length/3][];
-        for (int i = 0; i < rows.length; i+=3) {
-            names[i/3] = rows[i].split(".*html\">")[1].split("<")[0];
-            List<String> allSplitRows = new ArrayList<String>(Arrays.asList(rows[i+2].split("<.*?>")));
+        // Each player row is 3 high - on, off, difference. We only want the difference for now, except for name which is in on.
+        String[] names = new String[rows.length / 3];
+        double[][] colVals = new double[rows.length / 3][];
+        for (int i = 0; i < rows.length; i += 3) {
+            // Assign the name, which is in the hyperlink tag (so in the tag after the initial link, which ends in .html)
+            names[i / 3] = rows[i].split(".*html\">")[1].split("<")[0];
+            List<String> allSplitRows = new ArrayList<String>(Arrays.asList(rows[i + 2].split("<.*?>")));
             for (int j = allSplitRows.size() - 1; j >= 0; j--) {
+                // Remove the blank columns that are in between the meaningful ones.
                 if (allSplitRows.get(j).equals("")) {
                     allSplitRows.remove(j);
                 }
             }
+            // Remove the first column which is just a pointless text tag.
             allSplitRows.remove(0);
             String[] realValues = allSplitRows.toArray(new String[0]);
             double[] trulyParsedValues = new double[realValues.length];
-            trulyParsedValues[0] = Double.parseDouble(realValues[0].substring(0,realValues[0].length()-1));
+            // the first one is represented as a percentage so ignore the percentage sign
+            trulyParsedValues[0] = Double.parseDouble(realValues[0].substring(0, realValues[0].length() - 1));
+            // If it starts with a +, remove it, else keep the -
             for (int k = 1; k < realValues.length; k++) {
                 String parsee = realValues[k];
                 if (parsee.startsWith("+")) {
@@ -172,17 +189,17 @@ public class Scraper {
                     trulyParsedValues[k] = Double.parseDouble(parsee);
                 }
             }
-            colVals[i/3] = trulyParsedValues;
+            colVals[i / 3] = trulyParsedValues;
         }
-        szn.addPlayers(onOffRows, names, colVals);
+        szn.addPlayers(onOffCols, names, colVals);
     }
 
     // Adds spaces to a row's columns to allow the later parsing by split to be easier once JSoup's parser removes junk.
-    private static String addSpaces (String row) {
+    private static String addSpaces(String row) {
         char[] letters = row.toCharArray();
         int j = 0; // Position in row
         for (int i = 0; i < letters.length; i++, j++) {
-            if (letters[i] == '<' && i > 0 && letters[i-1] != '>') {
+            if (letters[i] == '<' && i > 0 && letters[i - 1] != '>') {
                 row = row.substring(0, j) + " " + row.substring(j);
                 j += 1;
             }
@@ -191,8 +208,6 @@ public class Scraper {
     }
 
     // Gets an array of all attributes that the row has.
-    // TODO: fix the fact undefined values don't get added. So don't remove empties? Then put blank
-    // in the col names, and delete blank cols as many times as necessary afterwards
     private static String[] relevantChildren(String blob) {
         String[] lines = blob.split("\n");
         StringBuilder allLines = new StringBuilder();
@@ -200,14 +215,14 @@ public class Scraper {
             allLines.append(line);
         }
         String[] children = allLines.toString().split("<.*?>");
-        String name = children[1].substring(0,children[1].length()-1);
+        String name = children[1].substring(0, children[1].length() - 1);
         StringBuilder allChildren = new StringBuilder();
-        for (int i = 2; i <  children.length; i++) {
+        for (int i = 2; i < children.length; i++) {
             allChildren.append(children[i]);
         }
         String[] temp = allChildren.toString().split(" +");
         String[] returnee = new String[temp.length + 1];
-        System.arraycopy(temp,0,returnee,1,temp.length);
+        System.arraycopy(temp, 0, returnee, 1, temp.length);
         returnee[0] = name;
         return returnee;
     }
@@ -216,6 +231,6 @@ public class Scraper {
     // and then finding only the important rows and splitting them into a list.
     private static String[] tableRows(Element container, String tableSelector) {
         Node comment = container.selectFirst(tableSelector);
-        return tbodySeasons(comment.childNode(comment.childNodeSize()-2).outerHtml().split("[\\r\\n]+"));
+        return tbodySeasons(comment.childNode(comment.childNodeSize() - 2).outerHtml().split("[\\r\\n]+"));
     }
 }
