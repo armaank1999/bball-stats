@@ -11,14 +11,12 @@ public class TeamSeason {
     private static final String NEW_LINE = "\n";
     public final String team;
     public final int year;
-    private Map<String, List<Double>> playerSeasons;
-    private List<String> colNames;
+    private final List<String> colNames = new ArrayList<String>();
+    private final Map<String, List<Double>> playerSeasons = new LinkedHashMap<String, List<Double>>();
 
     public TeamSeason(String t, int y) {
         year = y;
         team = t;
-        playerSeasons = new LinkedHashMap<String, List<Double>>();
-        colNames = new ArrayList<String>();
     }
 
     public void addPlayers(String[] newColNames, String[] names, double[][] colVals) {
@@ -26,12 +24,9 @@ public class TeamSeason {
         for (int i = 0; i < names.length; i++) {
             List<Double> row = findOrCreateRow(names[i]);
             double[] basic = colVals[i];
-            Double[] fancy = new Double[basic.length];
-            for (int j = 0; j < basic.length; j++) {
-                fancy[j] = basic[j];
+            for (double val : basic) {
+                row.add(val);
             }
-            List<Double> vals = Arrays.asList(fancy);
-            row.addAll(vals);
         }
     }
 
@@ -104,8 +99,9 @@ public class TeamSeason {
             for (List season : playerSeasons.values()) {
                 season.remove(index);
             }
+            return true;
         }
-        return index != -1;
+        return false;
     }
 
     public void deleteCols(String[] cols) {
@@ -114,18 +110,25 @@ public class TeamSeason {
         }
     }
 
-    public void deleteBlankCols() {
-        while (deleteCol("")) {
-        }
+    public boolean deleteBlankCols() {
+        return deleteCol("") && deleteBlankCols();
     }
 
+//    OR the original
+//    public void deleteBlankCols() {
+//        while (deleteCol("")) {
+//        }
+//    }
+//    Not sure which is better practice/faster.
+
+    // Takes a column and adjusts each player's value so that the net minute-weighted sum is 0.
     public void normalize(int colPos) {
         double total = 0.0;
         double totalMinutes = 0.0;
-        int minutesPos = colNames.indexOf("MP");
+        int weightPos = colNames.indexOf("MP");
         for (List<Double> row : playerSeasons.values()) {
-            totalMinutes += row.get(minutesPos);
-            total += row.get(colPos) * row.get(minutesPos);
+            totalMinutes += row.get(weightPos);
+            total += row.get(colPos) * row.get(weightPos);
         }
         double average = 5 * total / totalMinutes;
         for (List<Double> row : playerSeasons.values()) {
@@ -133,11 +136,14 @@ public class TeamSeason {
         }
     }
 
+    // Adds column based on the other adjustment methods and add a new column for the sum of them.
     public void addAdjustments() {
         addReboundingAdjustment();
         addOnOffAdjustment();
     }
 
+    // Subtract a multiple of individual ORB/DRB% and add in a multiple of the effect that player has on
+    // the team rebounding wise to gauge actual impact/punish stat-padding, then normalize the column.
     private void addReboundingAdjustment() {
         int percentIndex = colNames.indexOf("%MP");
         int gamesIndex = colNames.indexOf("G");
@@ -145,28 +151,40 @@ public class TeamSeason {
         int drbIndex = colNames.indexOf("DRB%");
         int netORBIndex = colNames.indexOf("+-TmORB%");
         int netDRBIndex = colNames.indexOf("+-TmDRB%");
-        int adjIndex = colNames.size();
-        colNames.add("RBAdj");
         for (List<Double> row : playerSeasons.values()) {
             double weight = row.get(percentIndex) * row.get(percentIndex) / 10000;
             double value = 0.0;
-            row.set(adjIndex, value * weight);
+            row.add(value * weight);
         }
-
+        normalize(colNames.size());
+        colNames.add("RBAdj");
     }
 
+    // Add/subtract points based on how much better the team/opponent's offensive ratings are.
+    // Weigh defensive impact more as that is less captured by the other baseline advanced stats.
+    // Give points based on minutes per game as clearly players who play more MPG are better
+    // but WS/48 over corrects for that.
     private void addOnOffAdjustment() {
+        int totalMinutesIndex = colNames.indexOf("MP");
         int percentIndex = colNames.indexOf("%MP");
         int gamesIndex = colNames.indexOf("G");
         int offenseOnOffIndex = colNames.indexOf("+-TmORtg");
         int defenseOnOffIndex = colNames.indexOf("+-OpORtg");
         int adjIndex = colNames.size();
-        colNames.add("+-Adj");
         for (List<Double> row : playerSeasons.values()) {
-            double weight = row.get(gamesIndex) * row.get(percentIndex) * row.get(percentIndex) / 820000;
+            double gamesPlayed = row.get(gamesIndex);
+            double minutesPlayed = row.get(totalMinutesIndex);
+            // Just something random thrown around. Adjusts for total games played and minutes per game.
+            double minuteAdjustment = ((Math.log(gamesPlayed) + 2.0 * Math.log(Math.max(minutesPlayed / gamesPlayed - 5, 1))
+                    + 2.0 * Math.sqrt((30 + minutesPlayed) / (gamesPlayed + 2))) - 20) / 10;
+            // Weight based on sqrt of games played and if they play exactly half the minutes, that means the data as as valid
+            // as possible, so multiply % by 1 - %.
+            double weight = Math.sqrt(row.get(gamesIndex)) * row.get(percentIndex) * (100 - row.get(percentIndex)) / 22500;
             double value = 0.0;
-            row.set(adjIndex, value * weight);
+            row.set(adjIndex, value * weight + minuteAdjustment);
         }
+        normalize(colNames.size());
+        colNames.add("+-Adj");
     }
 
 }

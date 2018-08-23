@@ -18,13 +18,13 @@ So I decided that it would be nice to be able to read from basketball-reference 
 ### Part 2: Creating an API
 
 I decided it would be best to copy from each teams page, as that is easier to do than find every player season link, and then issues with players who go to the ABA or miss a whole season, etc, occur.
+However, players who get traded mid season won't have their full stats taken into account, but that's a problem with parsing the player page anyway.
 I decided to store each of these TeamSeasons in a TeamSeason object, which can each also be saved to CSV or presumably in a database, though that has yet to be implemented.
 There were some pains with this, and still are some outstanding issues that I may fix, but sufficient functionality - the Advanced Table and the On-Off table - are available for Part 3.
 
 ### Part 3: My Own Subjective Take on a Supposedly Objective Business
 
 All basketball advanced stats that I've seen, especially the widely used ones, are basically the same - a linear combination of a player's box score/advanced numbers
-with the hope that the end result somehow captures everything that the person does. This is a Sisyphean feat, and I believe that utilizing the new technologies post 2000 - namely +- data - can help capture a player's true value more effectively than any such task.
+with the hope that the end result somehow captures everything that the person does. Hopefully utilizing the new technologies post 2000 - namely +- data - can help capture a player's true value more effectively.
 Now obviously, this project will not solve every issue with advanced stats, and +- has its own issues.
-Is a player good or are they just also in lineups that the best player on the team is in?, etc - but I think it still has value.
-Ideally, come up with a stat that utilizes +- data in the hopes that it will correlate with a player's true value more than the currently widely used ones.
+Is a player good or are they just also in lineups that the best player on the team is in?, etc - but I think it still has value. The hope is that it will correlate with a player's true value more than the currently widely used ones.

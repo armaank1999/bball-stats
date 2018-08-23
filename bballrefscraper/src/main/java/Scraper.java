@@ -25,13 +25,13 @@ public class Scraper {
     private static final String[] advancedIgnorees = {"VORP", "DBPM", "OBPM", "DWS", "OWS", "TRB%", "PER"};
     // Includes the duplicates with advanced and the per 100 we don't want.
     private static final String[] per100Ignorees = {"PF", "TRB", "ORB", "DRB", "MP", "GS", "G", "Age"};
-    // All the cols we don't want from the on-off table, since there are a ton.
-    private static final String[] onOffIgnorees = {"+-NtRtg", "+-NtPace", "+-NtTOV%", "+-NtEFG%", "+-NtBLK%", "+-NtSTL%", "+-NtAST%",
-            "+-NtTRB%", "+-NtDRB%", "+-NtORB%", "+-NtEFG%", "+-OpBLK%", "+-OpSTL%", "+-OpAST%", "+-OpTRB%", "+-OpDRB%", "+-OpORB%",
-            "+-OpPace", "+-TmTRB%", "+-TmBLK%", "+-TmSTL%", "+-TmAST%", "+-TmPace"};
+    // All the cols we don't want from the on-off table; there are a ton.
+    private static final String[] onOffIgnorees = {"+-NtRtg", "+-NtPace", "+-NtTOV%", "+-NtEFG%", "+-NtBLK%", "+-NtSTL%",
+            "+-NtAST%", "+-NtTRB%", "+-NtDRB%", "+-NtORB%", "+-NtEFG%", "+-OpBLK%", "+-OpSTL%", "+-OpAST%", "+-OpTRB%",
+            "+-OpDRB%", "+-OpORB%", "+-OpPace", "+-TmTRB%", "+-TmBLK%", "+-TmSTL%", "+-TmAST%", "+-TmPace"};
 
     public static void main(String[] args) throws Exception {
-        parseSeason("GSW", 2016);
+        parseSeason("OKC", 2018);
     }
 
     private static void parseSeason(String team, int year) throws Exception {
