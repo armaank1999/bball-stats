@@ -11,8 +11,8 @@ public class TeamSeason {
     public final int year;
     private final List<String> colNames = new ArrayList<String>();
     private final Map<String, List<Double>> playerSeasons = new LinkedHashMap<String, List<Double>>();
-    // Arbitrary variables that should eventually be reevaluated
-    private final static double minAdjCoeff = 0.1;
+    // Arbitrary variables that should eventually be reevaluated. minAdjCoeff is definitely in the right order of magnitude.
+    private final static double minAdjCoeff = 0.01;
     private final static double onOffCoeff = 0.05;
     private final static double rebCoeff = 0.1;
 
@@ -125,13 +125,16 @@ public class TeamSeason {
     // Then round all the values to 4 decimal places.
     public void normalize(int colPos) {
         double total = 0.0;
-        double totalMinutes = 0.0;
+        double minutes = 0.0;
         int weightPos = colNames.indexOf("MP");
         for (List<Double> row : playerSeasons.values()) {
-            totalMinutes += row.get(weightPos);
+            minutes += row.get(weightPos);
             total += row.get(colPos) * row.get(weightPos);
         }
-        double average = 5 * total / totalMinutes;
+        double average = 5 * total / minutes;
+        System.out.println("Average: " + average);
+        System.out.println("Total: " + total);
+        System.out.println("Minutes: " + minutes);
         for (List<Double> row : playerSeasons.values()) {
             row.set(colPos, Math.floor(10000 * (row.get(colPos) - average)) / 10000);
         }
@@ -150,8 +153,8 @@ public class TeamSeason {
         int gamesIndex = colNames.indexOf("G");
         int orbIndex = colNames.indexOf("ORB%");
         int drbIndex = colNames.indexOf("DRB%");
-        int netORBIndex = colNames.indexOf("+-TmORB%");
-        int netDRBIndex = colNames.indexOf("+-TmDRB%");
+        int netORBIndex = colNames.indexOf("OoORB%");
+        int netDRBIndex = colNames.indexOf("OoDRB%");
         for (List<Double> row : playerSeasons.values()) {
             double weight = rebCoeff * Math.sqrt(row.get(gamesIndex)) * row.get(percentIndex) * row.get(percentIndex) / 22500;
             double value = 0.0;
@@ -169,8 +172,8 @@ public class TeamSeason {
         int totalMinutesIndex = colNames.indexOf("MP");
         int percentIndex = colNames.indexOf("%MP");
         int gamesIndex = colNames.indexOf("G");
-        int offenseOnOffIndex = colNames.indexOf("+-TmORtg");
-        int defenseOnOffIndex = colNames.indexOf("+-OpORtg");
+        int offenseOnOffIndex = colNames.indexOf("OoORtg");
+        int defenseOnOffIndex = colNames.indexOf("OoDRtg");
         for (List<Double> row : playerSeasons.values()) {
             double gamesPlayed = row.get(gamesIndex);
             double minutesPlayed = row.get(totalMinutesIndex);
@@ -183,13 +186,13 @@ public class TeamSeason {
             double weight = onOffCoeff * Math.sqrt(gamesPlayed) * row.get(percentIndex) * (100 - row.get(percentIndex)) / 22500;
             // Weight on off defense change more as traditional stats will capture the offensive difference more than
             // steals, blocks and defensive rebounds can ever manage.
-            double value = row.get(offenseOnOffIndex) + 2 * row.get(defenseOnOffIndex);
+            double value = row.get(offenseOnOffIndex) - 2 * row.get(defenseOnOffIndex);
             // row.add(value * weight + minuteAdjustment);
             row.add(value * weight);
             row.add(minuteAdjustment);
         }
         normalize(colNames.size());
-        colNames.add("+-Adj");
+        colNames.add("OoAdj");
         normalize(colNames.size());
         colNames.add("MinAdj");
     }

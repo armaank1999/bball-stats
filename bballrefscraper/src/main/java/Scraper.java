@@ -21,17 +21,17 @@ public class Scraper {
             "AST%", "STL%", "BLK%", "TOV%", "USG%", "OWS", "DWS", "WS", "WS/48", "OBPM", "DBPM", "BPM", "VORP"};
     private static final String[] per100Cols = {"Age", "G", "GS", "MP", "FG", "FGA", "FG%", "3P", "3PA", "3P%", "2P", "2PA", "2P%",
             "FT", "FTA", "FT%", "ORB", "DRB", "TRB", "AST", "STL", "BLK", "TOV", "PF", "PTS", "ORtg", "DRtg"};
-    private static final String[] onOffCols = {"%MP", "+-TmEFG%", "+-TmORB%", "+-TmDRB%", "+-TmTRB%", "+-TmAST%", "+-TmSTL%",
-            "+-TmBLK%", "+-TmTOV%", "+-TmPace", "+-TmORtg", "+-OpEFG%", "+-OpORB%", "+-OpDRB%", "+-OpTRB%", "+-OpAST%", "+-OpSTL%",
-            "+-OpBLK%", "+-OpTOV%", "+-OpPace", "+-OpORtg", "+-NtEFG%", "+-NtORB%", "+-NtDRB%", "+-NtTRB%", "+-NtAST%", "+-NtSTL%",
-            "+-NtBLK%", "+-NtTOV%", "+-NtPace", "+-NtRtg"};
+    private static final String[] onOffCols = {"%MP", "OoTmEFG%", "OoORB%", "OoDRB%", "OoTRB%", "OoTmAST%", "OoTmSTL%",
+            "OoTmBLK%", "OoTmTOV%", "OoTmPace", "OoORtg", "OoOpEFG%", "OoOpORB%", "OoOpDRB%", "OoOpTRB%", "OoOpAST%", "OoOpSTL%",
+            "OoOpBLK%", "OoOpTOV%", "OoOpPace", "OoDRtg", "OoNtEFG%", "OoNtORB%", "OoNtDRB%", "OoNtTRB%", "OoNtAST%", "OoNtSTL%",
+            "OoNtBLK%", "OoNtTOV%", "OoNtPace", "OoNtRtg"};
 
     // Cols from each table that are not needed. Per 100 also has duplicate cols with advanced, so those are included.
     private static final String[] advancedIgnorees = {"VORP", "DBPM", "OBPM", "DWS", "OWS", "TRB%", "PER"};
     private static final String[] per100Ignorees = {"PF", "TRB", "ORB", "DRB", "MP", "GS", "G", "Age"};
-    private static final String[] onOffIgnorees = {"+-NtRtg", "+-NtPace", "+-NtTOV%", "+-NtEFG%", "+-NtBLK%", "+-NtSTL%",
-            "+-NtAST%", "+-NtTRB%", "+-NtDRB%", "+-NtORB%", "+-NtEFG%", "+-OpBLK%", "+-OpSTL%", "+-OpAST%", "+-OpTRB%",
-            "+-OpDRB%", "+-OpORB%", "+-OpPace", "+-TmTRB%", "+-TmBLK%", "+-TmSTL%", "+-TmAST%", "+-TmPace"};
+    private static final String[] onOffIgnorees = {"OoNtRtg", "OoNtPace", "OoNtTOV%", "OoNtEFG%", "OoNtBLK%", "OoNtSTL%",
+            "OoNtAST%", "OoNtTRB%", "OoNtDRB%", "OoNtORB%", "OoNtEFG%", "OoOpBLK%", "OoOpSTL%", "OoOpAST%", "OoOpTRB%",
+            "OoOpDRB%", "OoOpORB%", "OoOpPace", "OoTmTRB%", "OoTmBLK%", "OoTmSTL%", "OoTmAST%", "OoTmPace"};
 
     public static void main(String[] args) throws Exception {
         parseSeason("BOS", 2018);
