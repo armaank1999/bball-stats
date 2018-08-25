@@ -34,7 +34,7 @@ public class Scraper {
             "OoOpDRB%", "OoOpORB%", "OoOpPace", "OoTRB%", "OoTmBLK%", "OoTmSTL%", "OoTmAST%", "OoTmPace"};
 
     public static void main(String[] args) throws Exception {
-        parseSeason("BOS", 2018);
+        parseSeason("GSW", 2016);
         // SeasonList allYears = SeasonList.seasonFromFile("years.csv");
     }
 
