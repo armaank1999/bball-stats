@@ -34,14 +34,15 @@ public class Scraper {
             "+-OpDRB%", "+-OpORB%", "+-OpPace", "+-TmTRB%", "+-TmBLK%", "+-TmSTL%", "+-TmAST%", "+-TmPace"};
 
     public static void main(String[] args) throws Exception {
-        parseSeason("OKC", 2018);
-        SeasonList allYears = SeasonList.seasonFromFile("years.csv");
+        parseSeason("BOS", 2018);
+        // SeasonList allYears = SeasonList.seasonFromFile("years.csv");
     }
 
     private static void parseSeason(String team, int year) throws Exception {
         TeamSeason parsedInfo = new TeamSeason(team, year);
         readSeasonLink(parsedInfo);
         readOnOffLink(parsedInfo);
+        parsedInfo.addAdjustments();
         //parsedInfo.printAllInfo();
         parsedInfo.saveFile();
     }
