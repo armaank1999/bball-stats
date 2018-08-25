@@ -15,6 +15,7 @@ public class Scraper {
     public static final String NEW_LINE = "\n";
     // The common portion of the url from everywhere we read from.
     public static final String baseTeamUrl = "https://www.basketball-reference.com/teams/";
+
     // A representation of the colNames of each respective table.
     private static final String[] advancedCols = {"Age", "G", "MP", "PER", "TS%", "3PAr", "FTr", "ORB%", "DRB%", "TRB%",
             "AST%", "STL%", "BLK%", "TOV%", "USG%", "OWS", "DWS", "WS", "WS/48", "OBPM", "DBPM", "BPM", "VORP"};
@@ -24,16 +25,18 @@ public class Scraper {
             "+-TmBLK%", "+-TmTOV%", "+-TmPace", "+-TmORtg", "+-OpEFG%", "+-OpORB%", "+-OpDRB%", "+-OpTRB%", "+-OpAST%", "+-OpSTL%",
             "+-OpBLK%", "+-OpTOV%", "+-OpPace", "+-OpORtg", "+-NtEFG%", "+-NtORB%", "+-NtDRB%", "+-NtTRB%", "+-NtAST%", "+-NtSTL%",
             "+-NtBLK%", "+-NtTOV%", "+-NtPace", "+-NtRtg"};
-    // Cols from each table that are not needed.
+
+    // Cols from each table that are not needed. Per 100 also has duplicate cols with advanced, so those are included.
     private static final String[] advancedIgnorees = {"VORP", "DBPM", "OBPM", "DWS", "OWS", "TRB%", "PER"};
-    // Includes the duplicates with advanced.
     private static final String[] per100Ignorees = {"PF", "TRB", "ORB", "DRB", "MP", "GS", "G", "Age"};
     private static final String[] onOffIgnorees = {"+-NtRtg", "+-NtPace", "+-NtTOV%", "+-NtEFG%", "+-NtBLK%", "+-NtSTL%",
             "+-NtAST%", "+-NtTRB%", "+-NtDRB%", "+-NtORB%", "+-NtEFG%", "+-OpBLK%", "+-OpSTL%", "+-OpAST%", "+-OpTRB%",
             "+-OpDRB%", "+-OpORB%", "+-OpPace", "+-TmTRB%", "+-TmBLK%", "+-TmSTL%", "+-TmAST%", "+-TmPace"};
 
     public static void main(String[] args) throws Exception {
-        parseSeason("OKC", 2018);
+//        parseSeason("OKC", 2018);
+        SeasonList allYears = SeasonList.seasonFromFile("years.csv");
+        allYears.saveFile("allyears");
     }
 
     private static void parseSeason(String team, int year) throws Exception {

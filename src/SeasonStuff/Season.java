@@ -5,8 +5,8 @@ import java.util.Map;
 import java.util.LinkedHashMap;
 
 public class Season {
-    private Map<String, Double> tableVals;
     public final String name;
+    private Map<String, Double> tableVals;
 
     public Season(String n) {
         tableVals = new HashMap<>();
