@@ -62,26 +62,24 @@ public class TeamSeason {
 
     private String rowCSV(String name) {
         StringBuilder line = new StringBuilder();
+        line.append(Scraper.NEW_LINE);
         line.append(name);
-        line.append(Scraper.CSV_SPLIT_BY);
         List<Double> row = playerSeasons.get(name);
         for (Double val : row) {
-            line.append(val);
             line.append(Scraper.CSV_SPLIT_BY);
+            line.append(val);
         }
-        line.append(Scraper.NEW_LINE);
         return line.toString();
     }
 
     public void saveFile() throws Exception {
         File f = new File(team + year + ".csv");
         FileWriter output = new FileWriter(f);
-        StringBuilder fileValue = new StringBuilder("Name,");
+        StringBuilder fileValue = new StringBuilder("Name");
         for (String col : colNames) {
-            fileValue.append(col);
             fileValue.append(Scraper.CSV_SPLIT_BY);
+            fileValue.append(col);
         }
-        fileValue.append(Scraper.NEW_LINE);
         for (String name : playerSeasons.keySet()) {
             fileValue.append(rowCSV(name));
         }

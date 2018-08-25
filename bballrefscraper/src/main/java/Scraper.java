@@ -40,8 +40,8 @@ public class Scraper {
         TeamSeason parsedInfo = new TeamSeason(team, year);
         readSeasonLink(parsedInfo);
         readOnOffLink(parsedInfo);
-        parsedInfo.printAllInfo();
-        //parsedInfo.saveFile();
+        //parsedInfo.printAllInfo();
+        parsedInfo.saveFile();
     }
 
     private static void readOnOffLink(TeamSeason szn) throws Exception {
