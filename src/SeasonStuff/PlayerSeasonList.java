@@ -1,19 +1,10 @@
 package SeasonStuff;
 
-import java.io.FileNotFoundException;
-import java.io.Serializable;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileInputStream;
-import java.io.ObjectOutputStream;
-import java.io.ObjectInputStream;
-import java.io.IOException;
 import java.util.List;
 import java.util.Iterator;
 import java.lang.Iterable;
 
-public class PlayerSeasonList implements Serializable, Iterable<Season> {
-    private static final long serialVersionUID = 945228L;
+public class PlayerSeasonList implements Iterable<Season> {
     private final List<Season> seasons;
     public int zeroIndexedSeason;
     public int lastIndexedSeason;
@@ -31,37 +22,6 @@ public class PlayerSeasonList implements Serializable, Iterable<Season> {
         for (Season curr : seasons) {
             curr.printManySeasons();
         }
-    }
-
-    public void saveSeasonList(String name) {
-        File f = new File("./" + name + ".txt");
-        try {
-            FileOutputStream fos = new FileOutputStream(f);
-            ObjectOutputStream oos = new ObjectOutputStream(fos);
-            oos.writeObject(this);
-        } catch (FileNotFoundException e) {
-            System.out.println("file not found");
-        } catch (IOException e) {
-            System.out.println(e.toString());
-        }
-    }
-
-    public static PlayerSeasonList loadSeasonList(String name) {
-        File f = new File("./" + name + ".txt");
-        if (f.exists()) {
-            try {
-                FileInputStream fs = new FileInputStream(f);
-                ObjectInputStream os = new ObjectInputStream(fs);
-                return (PlayerSeasonList) os.readObject();
-            } catch (FileNotFoundException e) {
-                System.out.println("file not found");
-            } catch (IOException e) {
-                System.out.println(e.toString());
-            } catch (ClassNotFoundException e) {
-                System.out.println("Class error");
-            }
-        }
-        return null;
     }
 
     // Only works if no seasons missing - so a player who leaves the league like Rick Barry must be split

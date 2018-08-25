@@ -1,12 +1,10 @@
 package SeasonStuff;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.LinkedHashMap;
 
-public class Season implements Serializable {
-    private static final long serialVersionUID = 9458L;
+public class Season {
     private Map<String, Double> tableVals;
     public final String name;
 
