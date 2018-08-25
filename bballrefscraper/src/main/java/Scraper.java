@@ -31,7 +31,7 @@ public class Scraper {
     private static final String[] per100Ignorees = {"PF", "TRB", "ORB", "DRB", "MP", "GS", "G", "Age"};
     private static final String[] onOffIgnorees = {"OoNtRtg", "OoNtPace", "OoNtTOV%", "OoNtEFG%", "OoNtBLK%", "OoNtSTL%",
             "OoNtAST%", "OoNtTRB%", "OoNtDRB%", "OoNtORB%", "OoNtEFG%", "OoOpBLK%", "OoOpSTL%", "OoOpAST%", "OoOpTRB%",
-            "OoOpDRB%", "OoOpORB%", "OoOpPace", "OoTmTRB%", "OoTmBLK%", "OoTmSTL%", "OoTmAST%", "OoTmPace"};
+            "OoOpDRB%", "OoOpORB%", "OoOpPace", "OoTRB%", "OoTmBLK%", "OoTmSTL%", "OoTmAST%", "OoTmPace"};
 
     public static void main(String[] args) throws Exception {
         parseSeason("BOS", 2018);

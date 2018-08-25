@@ -131,10 +131,7 @@ public class TeamSeason {
             minutes += row.get(weightPos);
             total += row.get(colPos) * row.get(weightPos);
         }
-        double average = 5 * total / minutes;
-        System.out.println("Average: " + average);
-        System.out.println("Total: " + total);
-        System.out.println("Minutes: " + minutes);
+        double average = total / minutes;
         for (List<Double> row : playerSeasons.values()) {
             row.set(colPos, Math.floor(10000 * (row.get(colPos) - average)) / 10000);
         }
