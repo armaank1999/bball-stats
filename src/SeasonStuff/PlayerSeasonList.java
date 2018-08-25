@@ -17,13 +17,6 @@ public class PlayerSeasonList implements Iterable<Season> {
         lastIndexedSeason = Integer.parseInt(yrs.get(yrs.size() - 1).name);
     }
 
-    public void printManySeasons() {
-        seasons.get(0).printNames();
-        for (Season curr : seasons) {
-            curr.printManySeasons();
-        }
-    }
-
     // Only works if no seasons missing - so a player who leaves the league like Rick Barry must be split
     public Season getSeason(int year) {
         if (increasing) return seasons.get(year-zeroIndexedSeason);

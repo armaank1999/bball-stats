@@ -10,6 +10,9 @@ import java.util.Arrays;
 import java.util.List;
 
 public class Scraper {
+    // CSV delimiters
+    public static final String CSV_SPLIT_BY = ",";
+    public static final String NEW_LINE = "\n";
     // The common portion of the url from everywhere we read from.
     public static final String baseTeamUrl = "https://www.basketball-reference.com/teams/";
     // A representation of the colNames of each respective table.
@@ -21,11 +24,10 @@ public class Scraper {
             "+-TmBLK%", "+-TmTOV%", "+-TmPace", "+-TmORtg", "+-OpEFG%", "+-OpORB%", "+-OpDRB%", "+-OpTRB%", "+-OpAST%", "+-OpSTL%",
             "+-OpBLK%", "+-OpTOV%", "+-OpPace", "+-OpORtg", "+-NtEFG%", "+-NtORB%", "+-NtDRB%", "+-NtTRB%", "+-NtAST%", "+-NtSTL%",
             "+-NtBLK%", "+-NtTOV%", "+-NtPace", "+-NtRtg"};
-    // Cols from advanced table that are not needed.
+    // Cols from each table that are not needed.
     private static final String[] advancedIgnorees = {"VORP", "DBPM", "OBPM", "DWS", "OWS", "TRB%", "PER"};
-    // Includes the duplicates with advanced and the per 100 we don't want.
+    // Includes the duplicates with advanced.
     private static final String[] per100Ignorees = {"PF", "TRB", "ORB", "DRB", "MP", "GS", "G", "Age"};
-    // All the cols we don't want from the on-off table; there are a ton.
     private static final String[] onOffIgnorees = {"+-NtRtg", "+-NtPace", "+-NtTOV%", "+-NtEFG%", "+-NtBLK%", "+-NtSTL%",
             "+-NtAST%", "+-NtTRB%", "+-NtDRB%", "+-NtORB%", "+-NtEFG%", "+-OpBLK%", "+-OpSTL%", "+-OpAST%", "+-OpTRB%",
             "+-OpDRB%", "+-OpORB%", "+-OpPace", "+-TmTRB%", "+-TmBLK%", "+-TmSTL%", "+-TmAST%", "+-TmPace"};

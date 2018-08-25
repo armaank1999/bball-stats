@@ -22,24 +22,13 @@ public class Season {
         }
     }
 
-    public void printSingleSeason() {
-        for (String key : tableVals.keySet()) {
-            System.out.println(key + ": " + tableVals.get(key));
-        }
-    }
-
-    public void printManySeasons() {
+    public String getCSV() {
+        StringBuilder sb = new StringBuilder();
         for (Double value : tableVals.values()) {
-            System.out.printf("%-7s", value);
+            sb.append(value);
+            sb.append(",");
         }
-        System.out.println();
-    }
-
-    public void printNames() {
-        for (String key : tableVals.keySet()) {
-            System.out.printf("%-7s", key);
-        }
-        System.out.println();
+        return sb.toString();
     }
 
     public void addElem(String name, double val) {

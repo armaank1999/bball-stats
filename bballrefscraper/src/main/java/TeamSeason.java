@@ -7,8 +7,6 @@ import java.util.LinkedHashMap;
 import java.util.Arrays;
 
 public class TeamSeason {
-    private static final String CSV_SPLIT_BY = ",";
-    private static final String NEW_LINE = "\n";
     public final String team;
     public final int year;
     private final List<String> colNames = new ArrayList<String>();
@@ -65,13 +63,13 @@ public class TeamSeason {
     private String rowCSV(String name) {
         StringBuilder line = new StringBuilder();
         line.append(name);
-        line.append(CSV_SPLIT_BY);
+        line.append(Scraper.CSV_SPLIT_BY);
         List<Double> row = playerSeasons.get(name);
         for (Double val : row) {
             line.append(val);
-            line.append(CSV_SPLIT_BY);
+            line.append(Scraper.CSV_SPLIT_BY);
         }
-        line.append(NEW_LINE);
+        line.append(Scraper.NEW_LINE);
         return line.toString();
     }
 
@@ -81,9 +79,9 @@ public class TeamSeason {
         StringBuilder fileValue = new StringBuilder("Name,");
         for (String col : colNames) {
             fileValue.append(col);
-            fileValue.append(CSV_SPLIT_BY);
+            fileValue.append(Scraper.CSV_SPLIT_BY);
         }
-        fileValue.append(NEW_LINE);
+        fileValue.append(Scraper.NEW_LINE);
         for (String name : playerSeasons.keySet()) {
             fileValue.append(rowCSV(name));
         }
@@ -137,6 +135,7 @@ public class TeamSeason {
     }
 
     // Adds column based on the other adjustment methods and add a new column for the sum of them.
+    // TODO: round vals to 4 places after decimal point - (floor x * 10000)/10000
     public void addAdjustments() {
         addReboundingAdjustment();
         addOnOffAdjustment();

@@ -23,12 +23,9 @@ public class SeasonParser {
                 for (Season currentYear : next) {
                     currentYear.addElem("SPA", SPA(currentYear,
                             curr.getSeason((int) currentYear.getElem("Yr"))));
-                    currentYear.addElem("MPA", MPA(currentYear,
-                            curr.getSeason((int) currentYear.getElem("Yr"))));
                 }
-                next.printManySeasons();
             }
-        } else curr.printManySeasons();
+        }
     }
 
     /* Add Points based on the player's usage rate and scoring efficiency
@@ -48,24 +45,6 @@ public class SeasonParser {
     // Add Points based on the player's turnovers and assists
     private static double ATPA(Season pS, Season yA) {
         return 0;
-    }
-
-    // Add Points based on the player's rebounding
-
-    // Figure out a way to quantify defense
-
-    // Adjust for Minutes per game because that means harder competition
-    private static double MPA(Season pS, Season yA) {
-        double MP = pS.getElem("MP");
-        double g = pS.getElem("G");
-        return Math.floor(((Math.log(g) + 2.0 * Math.log(Math.max(MP / g - 5, 1))
-                + 2.0 * Math.sqrt((30 + MP) / (g + 2))) - 20) * 1000) / 10000;
-    }
-
-    // One formula that takes all the other ones into account. Multiply each by a fitting
-    // coefficient - especially MPA
-    public static double PA(Season pS, Season yA) {
-        return ATPA(pS, yA) + SPA(pS, yA) + MPA(pS, yA);
     }
 
     private static PlayerSeasonList readFile(String fileName) {
