@@ -34,9 +34,8 @@ public class Scraper {
             "+-OpDRB%", "+-OpORB%", "+-OpPace", "+-TmTRB%", "+-TmBLK%", "+-TmSTL%", "+-TmAST%", "+-TmPace"};
 
     public static void main(String[] args) throws Exception {
-//        parseSeason("OKC", 2018);
+        parseSeason("OKC", 2018);
         SeasonList allYears = SeasonList.seasonFromFile("years.csv");
-        allYears.saveFile("allyears");
     }
 
     private static void parseSeason(String team, int year) throws Exception {

@@ -184,4 +184,16 @@ public class TeamSeason {
         colNames.add("+-Adj");
     }
 
+//    /* Add Points based on the player's usage rate and scoring efficiency .08 term gives extra points for having extra usage
+//     to not overglorify low usage players; netEff term credits players for being efficient. WS formula uses .92 so I use this.
+//     Then add points for providing floor spacing. The /20 is arbitrary.
+//     One could theoretically add a FTr term but there are upsides (stop transition scoring, foul trouble) and downsides
+//     (less offensive boards) as well as momentum. */
+//    private static double SPA(Season pS, Season yA) {
+//        double netEff = pS.getElem("TS%") - yA.getElem("TS%");
+//        double usage = pS.getElem("USG%");
+//        double net3PR = pS.getElem("3PAr") - yA.getElem("3PAr");
+//        return Math.floor((usage * (netEff + net3PR / 20.0) + .08 * (usage - 20.0)) * 1000) / 1000;
+//    }
+
 }

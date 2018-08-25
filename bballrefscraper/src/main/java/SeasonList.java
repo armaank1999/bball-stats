@@ -25,7 +25,7 @@ public class SeasonList {
             throw new Exception("File not formatted properly");
         }
         currVals = line.split(Scraper.CSV_SPLIT_BY);
-        SeasonList returnee = new SeasonList(Integer.parseInt(currVals[0]));
+        SeasonList returnee = new SeasonList((int) Double.parseDouble(currVals[0]));
         returnee.colNames.addAll(Arrays.asList(colNames));
         ArrayList<Double> convertee = new ArrayList<Double>();
         for (String val : currVals) {
