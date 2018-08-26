@@ -8,8 +8,9 @@ import java.util.Arrays;
 
 public class TeamSeason {
     // Arbitrary variables that should eventually be reevaluated. minAdjCoeff is definitely in the right order of magnitude.
+    // Each of these new stats should be addable to WS/48 and be reasonable afterwards, and the minAdj achieves that.
     // Issue for onOffCoeff - some teams have super drastic differences (09 Cavs, 16 Warriors) while others have all players
-    // close to eachother (18 celtics, 04 Pistons). Divide by sqrt(stddev) or smth to semi normalize the gap?
+    // close to each other (18 celtics, 04 Pistons). Divide by sqrt(stddev) or smth to partially normalize the gap?
     // Completely normalizing will defeat the purpose though...
     private final static double minAdjCoeff = 0.02;
     private final static double onOffCoeff = 0.05;
@@ -25,15 +26,8 @@ public class TeamSeason {
         team = t;
     }
 
-    public void addPlayers(String[] newColNames, String[] names, double[][] colVals) {
-        colNames.addAll(Arrays.asList(newColNames));
-        for (int i = 0; i < names.length; i++) {
-            List<Double> row = findOrCreateRow(names[i]);
-            double[] basic = colVals[i];
-            for (double val : basic) {
-                row.add(val);
-            }
-        }
+    public String url() {
+        return Scraper.baseTeamUrl + team + "/" + year + ".html";
     }
 
     public void printAllInfo() {
@@ -48,17 +42,6 @@ public class TeamSeason {
         }
     }
 
-    public String url() {
-        return Scraper.baseTeamUrl + team + "/" + year + ".html";
-    }
-
-    private List<Double> findOrCreateRow(String name) {
-        if (!playerSeasons.containsKey(name)) {
-            playerSeasons.put(name, new ArrayList<>());
-        }
-        return playerSeasons.get(name);
-    }
-
     private void printRow(String name) {
         System.out.printf("%-25s", name);
         List<Double> row = playerSeasons.get(name);
@@ -70,7 +53,6 @@ public class TeamSeason {
 
     private String rowCSV(String name) {
         StringBuilder line = new StringBuilder();
-        line.append(Scraper.NEW_LINE);
         line.append(name);
         List<Double> row = playerSeasons.get(name);
         for (Double val : row) {
@@ -80,20 +62,45 @@ public class TeamSeason {
         return line.toString();
     }
 
+    private String[] rowCSVs() {
+        String[] csvs = new String[playerSeasons.size()];
+        int i = 0;
+        for (String name : playerSeasons.keySet()) {
+            csvs[i] = rowCSV(name);
+            i += 1;
+        }
+        return csvs;
+    }
+
     public void saveFile() throws Exception {
         File f = new File(team + year + ".csv");
         FileWriter output = new FileWriter(f);
         StringBuilder fileValue = new StringBuilder("Name");
-        for (String col : colNames) {
-            fileValue.append(Scraper.CSV_SPLIT_BY);
-            fileValue.append(col);
-        }
-        for (String name : playerSeasons.keySet()) {
-            fileValue.append(rowCSV(name));
-        }
+        fileValue.append(Scraper.CSV_SPLIT_BY);
+        fileValue.append(String.join(Scraper.CSV_SPLIT_BY, colNames));
+        fileValue.append(Scraper.NEW_LINE);
+        fileValue.append(String.join(Scraper.NEW_LINE, rowCSVs()));
         output.append(fileValue);
         output.flush();
         output.close();
+    }
+
+    public void addPlayers(String[] newColNames, String[] names, double[][] colVals) {
+        colNames.addAll(Arrays.asList(newColNames));
+        for (int i = 0; i < names.length; i++) {
+            List<Double> row = findOrCreateRow(names[i]);
+            double[] basic = colVals[i];
+            for (double val : basic) {
+                row.add(val);
+            }
+        }
+    }
+
+    private List<Double> findOrCreateRow(String name) {
+        if (!playerSeasons.containsKey(name)) {
+            playerSeasons.put(name, new ArrayList<>());
+        }
+        return playerSeasons.get(name);
     }
 
     private boolean deleteCol(String colName) {
@@ -144,7 +151,7 @@ public class TeamSeason {
     // Adds column based on the other adjustment methods and add a new column for the sum of them.
     public void addAdjustments() {
         // addReboundingAdjustment();
-        addOnOffAdjustment();
+        addOnOffAdjustments();
     }
 
     // Subtract a multiple of individual ORB/DRB% and add in a multiple of the effect that player has on
@@ -169,7 +176,7 @@ public class TeamSeason {
     // Weigh defensive impact more as that is less captured by the other baseline advanced stats.
     // Give points based on minutes per game as clearly players who play more MPG are better
     // but WS/48 over corrects for that.
-    private void addOnOffAdjustment() {
+    private void addOnOffAdjustments() {
         int totalMinutesIndex = colNames.indexOf("MP");
         int percentIndex = colNames.indexOf("%MP");
         int gamesIndex = colNames.indexOf("G");
@@ -188,7 +195,6 @@ public class TeamSeason {
             // Weight on off defense change more as traditional stats will capture the offensive difference more than
             // steals, blocks and defensive rebounds can ever manage. Number should be between 1 and 2.
             double value = row.get(offenseOnOffIndex) - 1.5 * row.get(defenseOnOffIndex);
-            // row.add(value * weight + minuteAdjustment);
             row.add(value * weight);
             row.add(minuteAdjustment);
         }

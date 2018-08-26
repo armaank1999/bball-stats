@@ -7,8 +7,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 public class SeasonList {
-    private final List<String> colNames = new ArrayList<String>();
-    private final List<ArrayList<Double>> years = new ArrayList<ArrayList<Double>>();
+    private final List<String> colNames = new ArrayList<>();
+    private final List<ArrayList<Double>> years = new ArrayList<>();
     public int firstSeason;
 
     private SeasonList(int fS) {
@@ -27,14 +27,14 @@ public class SeasonList {
         currVals = line.split(Scraper.CSV_SPLIT_BY);
         SeasonList returnee = new SeasonList((int) Double.parseDouble(currVals[0]));
         returnee.colNames.addAll(Arrays.asList(colNames));
-        ArrayList<Double> convertee = new ArrayList<Double>();
+        ArrayList<Double> convertee = new ArrayList<>();
         for (String val : currVals) {
             convertee.add(Double.parseDouble(val));
         }
         returnee.years.add(convertee);
         while ((line = br.readLine()) != null) {
             currVals = line.split(Scraper.CSV_SPLIT_BY);
-            convertee = new ArrayList<Double>();
+            convertee = new ArrayList<>();
             for (String val : currVals) {
                 convertee.add(Double.parseDouble(val));
             }
@@ -46,7 +46,7 @@ public class SeasonList {
     public List<Double> getYear(int year) {
         int position = firstSeason - year;
         if (position < 0 || position >= years.size()) {
-            return new ArrayList<Double>();
+            return new ArrayList<>();
         }
         return years.get(position);
     }
@@ -65,24 +65,33 @@ public class SeasonList {
 
     public void saveFile(String name) throws Exception {
         StringBuilder sb = new StringBuilder();
-        for (String colName : colNames) {
-            sb.append(colName);
-            sb.append(Scraper.CSV_SPLIT_BY);
-        }
-        for (ArrayList<Double> year : years) {
-            sb.setLength(sb.length() - 1);
-            sb.append(Scraper.NEW_LINE);
-            for (Double stat : year) {
-                sb.append(stat);
-                sb.append(Scraper.CSV_SPLIT_BY);
-            }
-        }
-        sb.setLength(sb.length() - 1);
+        sb.append(String.join(Scraper.CSV_SPLIT_BY, colNames));
+        sb.append(String.join(Scraper.NEW_LINE, rowCSVs()));
         File f = new File(name + ".csv");
         FileWriter output = new FileWriter(f);
         output.append(sb);
         output.flush();
         output.close();
+    }
+
+    private String[] rowCSVs() {
+        String[] csvs = new String[years.size()];
+        int i = 0;
+        for (ArrayList<Double> year : years) {
+            csvs[i] = rowCSV(year);
+            i += 1;
+        }
+        return csvs;
+    }
+
+    private static String rowCSV(List<Double> year) {
+        StringBuilder sb = new StringBuilder();
+        for (Double stat : year) {
+            sb.append(stat);
+            sb.append(Scraper.CSV_SPLIT_BY);
+        }
+        sb.setLength(sb.length() - 1);
+        return sb.toString();
     }
 
 }
