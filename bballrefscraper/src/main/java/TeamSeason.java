@@ -7,14 +7,18 @@ import java.util.LinkedHashMap;
 import java.util.Arrays;
 
 public class TeamSeason {
-    public final String team;
-    public final int year;
-    private final List<String> colNames = new ArrayList<String>();
-    private final Map<String, List<Double>> playerSeasons = new LinkedHashMap<String, List<Double>>();
     // Arbitrary variables that should eventually be reevaluated. minAdjCoeff is definitely in the right order of magnitude.
-    private final static double minAdjCoeff = 0.01;
+    // Issue for onOffCoeff - some teams have super drastic differences (09 Cavs, 16 Warriors) while others have all players
+    // close to eachother (18 celtics, 04 Pistons). Divide by sqrt(stddev) or smth to semi normalize the gap?
+    // Completely normalizing will defeat the purpose though...
+    private final static double minAdjCoeff = 0.02;
     private final static double onOffCoeff = 0.05;
     private final static double rebCoeff = 0.1;
+
+    public final String team;
+    public final int year;
+    private final List<String> colNames = new ArrayList<>();
+    private final Map<String, ArrayList<Double>> playerSeasons = new LinkedHashMap<>();
 
     public TeamSeason(String t, int y) {
         year = y;
@@ -50,7 +54,7 @@ public class TeamSeason {
 
     private List<Double> findOrCreateRow(String name) {
         if (!playerSeasons.containsKey(name)) {
-            playerSeasons.put(name, new ArrayList<Double>());
+            playerSeasons.put(name, new ArrayList<>());
         }
         return playerSeasons.get(name);
     }
@@ -176,14 +180,14 @@ public class TeamSeason {
             double minutesPlayed = row.get(totalMinutesIndex);
             // Adjusts for total games played and minutes per game. Benefits players who play more, as they will face
             // harder competition, be more tired, etc. WS/48 ignores this.
-            double minuteAdjustment = minAdjCoeff * ((Math.log(gamesPlayed) + 2.0 * Math.log(Math.max(minutesPlayed / gamesPlayed - 5, 1))
-                    + 2.0 * Math.sqrt((30 + minutesPlayed) / (gamesPlayed + 2))) - 20);
+            double minuteAdjustment = minAdjCoeff * ((0.5 * Math.log(gamesPlayed) + Math.log(Math.max(minutesPlayed / gamesPlayed - 5, 1))
+                    + Math.sqrt((30 + minutesPlayed) / (gamesPlayed + 2))) - 10);
             // Weight based on sqrt of games played and if they play exactly half the minutes,
             // that means the data as as valid as possible, so multiply % by 1 - %.
             double weight = onOffCoeff * Math.sqrt(gamesPlayed) * row.get(percentIndex) * (100 - row.get(percentIndex)) / 22500;
             // Weight on off defense change more as traditional stats will capture the offensive difference more than
-            // steals, blocks and defensive rebounds can ever manage.
-            double value = row.get(offenseOnOffIndex) - 2 * row.get(defenseOnOffIndex);
+            // steals, blocks and defensive rebounds can ever manage. Number should be between 1 and 2.
+            double value = row.get(offenseOnOffIndex) - 1.5 * row.get(defenseOnOffIndex);
             // row.add(value * weight + minuteAdjustment);
             row.add(value * weight);
             row.add(minuteAdjustment);

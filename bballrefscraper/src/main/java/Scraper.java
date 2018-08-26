@@ -35,7 +35,12 @@ public class Scraper {
 
     public static void main(String[] args) throws Exception {
         parseSeason("GSW", 2016);
-        // SeasonList allYears = SeasonList.seasonFromFile("years.csv");
+//        parseSeason("CLE", 2009);
+//        parseSeason("LAL", 2009);
+//        parseSeason("DET", 2004);
+//        parseSeason("OKC", 2018);
+//        parseSeason("BOS", 2018);
+//        SeasonList allYears = SeasonList.seasonFromFile("years.csv");
     }
 
     private static void parseSeason(String team, int year) throws Exception {
@@ -43,29 +48,29 @@ public class Scraper {
         readSeasonLink(parsedInfo);
         readOnOffLink(parsedInfo);
         parsedInfo.addAdjustments();
-        //parsedInfo.printAllInfo();
+//        parsedInfo.printAllInfo();
         parsedInfo.saveFile();
     }
 
     private static void readOnOffLink(TeamSeason szn) throws Exception {
         // First find the url and table we want. Find the real content of the table with our helper.
         // Then call our add rows helper to add the rows and remove the ones we don't want.
-        String ofOffLink = baseTeamUrl + szn.team + "/" + szn.year + "/on-off";
+        String ofOffLink = String.format("%s%s/%s/on-off", baseTeamUrl, szn.team, szn.year);
         Document statsDoc = Jsoup.connect(ofOffLink).get();
-        Node onOffBlob = statsDoc.selectFirst("[role=main]").selectFirst("div#all_on_off");
-        addOnOffRows(szn, trSeasons(onOffBlob.childNode(onOffBlob.childNodeSize() - 2).outerHtml().split("[\\r\\n]+")));
+        Node blob = statsDoc.selectFirst("[role=main]").selectFirst("div#all_on_off");
+        addOnOffRows(szn, trSeasons(blob.childNode(blob.childNodeSize() - 2).outerHtml().split("[\\r\\n]+")));
         szn.deleteCols(onOffIgnorees);
     }
 
     private static void readSeasonLink(TeamSeason szn) throws Exception {
         // First find the url and table we want. Find the real content of the table(s) with our helper.
         // Then call our add rows helper to add the rows and remove the ones we don't want.
-        String seasonLink = baseTeamUrl + szn.team + "/" + szn.year + ".html";
+        String seasonLink = String.format("%s%s/%s.html", baseTeamUrl, szn.team, szn.year);
         Document statsDoc = Jsoup.connect(seasonLink).get();
-        Element statBlob = statsDoc.selectFirst("[role=main]");
-        addRows(szn, tableRows(statBlob, "div#all_advanced"), advancedCols);
+        Element blob = statsDoc.selectFirst("[role=main]");
+        addRows(szn, tableRows(blob, "div#all_advanced"), advancedCols);
         szn.deleteCols(advancedIgnorees);
-        // addRows(szn, tableRows(statBlob, "div#all_per_poss"), per100Cols);
+        // addRows(szn, tableRows(blob, "div#all_per_poss"), per100Cols);
         // szn.deleteCols(per100Ignorees);
     }
 
@@ -81,18 +86,18 @@ public class Scraper {
     // Get only the lines that are in the trs of a comment blob.
     private static String[] trSeasons(String[] allSeasons) {
         // First get all the rows that are actually in the table.
-        int lastIgnoredRow = trhLocation(allSeasons);
-        int numPlayers = trhEndLocation(allSeasons) - lastIgnoredRow + 1;
+        int lastIgnoredRow = trLocation(allSeasons);
+        int numPlayers = trEndLocation(allSeasons) - lastIgnoredRow + 1;
         String[] playerSeasons = new String[numPlayers];
         System.arraycopy(allSeasons, lastIgnoredRow, playerSeasons, 0, numPlayers);
-        // Now remove all the additional headers that are in between actual rows.
-        List<String> removableSeasonList = new ArrayList<String>(Arrays.asList(playerSeasons));
-        for (int i = removableSeasonList.size() - 4; i > 0; i--) {
-            if (removableSeasonList.get(i).startsWith(" ") || removableSeasonList.get(i).startsWith("<tr class=\"thead\"><td")) {
-                removableSeasonList.remove(i);
+        // Now remove all the additional headers that are in between actual rows. Don't need to check last three
+        List<String> returnee = new ArrayList<>(Arrays.asList(playerSeasons));
+        for (int i = returnee.size() - 4; i > 0; i--) {
+            if (returnee.get(i).startsWith(" ") || returnee.get(i).startsWith("<tr class=\"thead\"><td")) {
+                returnee.remove(i);
             }
         }
-        return removableSeasonList.toArray(new String[0]);
+        return returnee.toArray(new String[0]);
     }
 
     // helpers to find line numbers so the rest can be ignored, and then the relevant rows are parsed
@@ -114,7 +119,7 @@ public class Scraper {
         return -1;
     }
 
-    private static int trhLocation(String[] htmlBlob) {
+    private static int trLocation(String[] htmlBlob) {
         for (int i = 0; i < htmlBlob.length; i++) {
             if (htmlBlob[i].startsWith("<tr ><th")) {
                 return i;
@@ -123,7 +128,7 @@ public class Scraper {
         return -1;
     }
 
-    private static int trhEndLocation(String[] htmlBlob) {
+    private static int trEndLocation(String[] htmlBlob) {
         for (int i = htmlBlob.length - 1; i > 0; i--) {
             if (htmlBlob[i].contains("</td></tr>")) {
                 return i;
@@ -132,10 +137,10 @@ public class Scraper {
         return -1;
     }
 
-    // reads a text file for its line
-    private static List<String> readFile(String fileName) throws Exception {
+    // reads a text file for its lines into a list
+    private static List<String> linesFromFile(String fileName) throws Exception {
         String currLine;
-        ArrayList<String> blobs = new ArrayList<String>();
+        ArrayList<String> blobs = new ArrayList<>();
         BufferedReader br = new BufferedReader(new FileReader(fileName));
         while ((currLine = br.readLine()) != null) {
             if (currLine.length() > 0) {
@@ -166,7 +171,7 @@ public class Scraper {
     }
 
     private static void addOnOffRows(TeamSeason szn, String[] rows) {
-        // Each player row is 3 high - on, off, difference. We only want the difference for now, except for name which is in on.
+        // Each player row is 3 high - on, off, difference. We only want the difference for now, except for name which is in 1.
         String[] names = new String[rows.length / 3];
         double[][] colVals = new double[rows.length / 3][];
         for (int i = 0; i < rows.length; i += 3) {
@@ -212,14 +217,10 @@ public class Scraper {
         return row;
     }
 
-    // Gets an array of all attributes that the row has.
+    // Gets an array of all attributes that the row has. First is rank, which we ignore. Second is name, which is
+    // wrapped in a href so it's extracted differently from the others
     private static String[] relevantChildren(String blob) {
-        String[] lines = blob.split("\n");
-        StringBuilder allLines = new StringBuilder();
-        for (String line : lines) {
-            allLines.append(line);
-        }
-        String[] children = allLines.toString().split("<.*?>");
+        String[] children = String.join("", blob.split("\n")).split("<.*?>");
         String name = children[1].substring(0, children[1].length() - 1);
         StringBuilder allChildren = new StringBuilder();
         for (int i = 2; i < children.length; i++) {
@@ -233,9 +234,9 @@ public class Scraper {
     }
 
     // Finds all the rows of a table with a certain identifier by seeking out its commented out version
-    // and then finding only the important rows and splitting them into a list.
+    // and then finding only the important rows and splitting them into an array.
     private static String[] tableRows(Element container, String tableSelector) {
-        Node comment = container.selectFirst(tableSelector);
-        return tbodySeasons(comment.childNode(comment.childNodeSize() - 2).outerHtml().split("[\\r\\n]+"));
+        Node blob = container.selectFirst(tableSelector);
+        return tbodySeasons(blob.childNode(blob.childNodeSize() - 2).outerHtml().split("[\\r\\n]+"));
     }
 }
