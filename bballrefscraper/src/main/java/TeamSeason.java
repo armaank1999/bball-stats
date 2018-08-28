@@ -14,7 +14,7 @@ public class TeamSeason {
     // Completely normalizing will defeat the purpose though...
     private final static double minAdjCoeff = 0.02;
     private final static double onOffCoeff = 0.05;
-    private final static double rebCoeff = 0.1;
+    private final static double rebCoeff = 0.002;
 
     public final String team;
     public final int year;
@@ -52,8 +52,7 @@ public class TeamSeason {
     }
 
     private String rowCSV(String name) {
-        StringBuilder line = new StringBuilder();
-        line.append(name);
+        StringBuilder line = new StringBuilder(name);
         List<Double> row = playerSeasons.get(name);
         for (Double val : row) {
             line.append(Scraper.CSV_SPLIT_BY);
@@ -89,8 +88,7 @@ public class TeamSeason {
         colNames.addAll(Arrays.asList(newColNames));
         for (int i = 0; i < names.length; i++) {
             List<Double> row = findOrCreateRow(names[i]);
-            double[] basic = colVals[i];
-            for (double val : basic) {
+            for (double val : colVals[i]) {
                 row.add(val);
             }
         }
@@ -130,17 +128,17 @@ public class TeamSeason {
 //        while (deleteCol("")) {
 //        }
 //    }
+//
 //    Not sure which is better practice/faster.
 
     // Takes a column and adjusts each player's value so that the net minute-weighted sum is 0.
     // Then round all the values to 4 decimal places.
     public void normalize(int colPos) {
-        double total = 0.0;
-        double minutes = 0.0;
-        int weightPos = colNames.indexOf("MP");
+        double total = 0, minutes = 0;
+        int weightI = colNames.indexOf("MP");
         for (List<Double> row : playerSeasons.values()) {
-            minutes += row.get(weightPos);
-            total += row.get(colPos) * row.get(weightPos);
+            minutes += row.get(weightI);
+            total += row.get(colPos) * row.get(weightI);
         }
         double average = total / minutes;
         for (List<Double> row : playerSeasons.values()) {
@@ -150,22 +148,20 @@ public class TeamSeason {
 
     // Adds column based on the other adjustment methods and add a new column for the sum of them.
     public void addAdjustments() {
-        // addReboundingAdjustment();
+        addReboundingAdjustment();
         addOnOffAdjustments();
     }
 
     // Subtract a multiple of individual ORB/DRB% and add in a multiple of the effect that player has on
     // the team rebounding wise to gauge actual impact/punish stat-padding, then normalize the column.
+    // Also pretty universally hurts centers, but I feel that advanced stats in general overhype them -
+    // e.g. Javale, David West, Zaza WS/48 are way higher than Klay's, so keeping this feature
     private void addReboundingAdjustment() {
-        int percentIndex = colNames.indexOf("%MP");
-        int gamesIndex = colNames.indexOf("G");
-        int orbIndex = colNames.indexOf("ORB%");
-        int drbIndex = colNames.indexOf("DRB%");
-        int netORBIndex = colNames.indexOf("OoORB%");
-        int netDRBIndex = colNames.indexOf("OoDRB%");
+        int percentI = colNames.indexOf("%MP"), gamesI = colNames.indexOf("G"), orbI = colNames.indexOf("ORB%"), drbI = colNames.indexOf("DRB%");
+        int netORBI = colNames.indexOf("OoORB%"), netDRBI = colNames.indexOf("OoDRB%");
         for (List<Double> row : playerSeasons.values()) {
-            double weight = rebCoeff * Math.sqrt(row.get(gamesIndex)) * row.get(percentIndex) * row.get(percentIndex) / 22500;
-            double value = 0.0;
+            double weight = rebCoeff * Math.sqrt(row.get(gamesI)) * row.get(percentI) * row.get(percentI) / 22500;
+            double value = (row.get(netORBI) - row.get(orbI)) + (row.get(netDRBI) - row.get(drbI));
             row.add(Math.floor(value * weight * 10000) / 10000);
         }
         normalize(colNames.size());
@@ -173,29 +169,17 @@ public class TeamSeason {
     }
 
     // Add/subtract points based on how much better the team/opponent's offensive ratings are.
-    // Weigh defensive impact more as that is less captured by the other baseline advanced stats.
-    // Give points based on minutes per game as clearly players who play more MPG are better
-    // but WS/48 over corrects for that.
+    // Weigh defensive impact more as that is less captured by the other baseline advanced stats - number should be between 1 and 2.
+    // Give points based on total games played minutes per game as clearly players who play more MPG are better
+    // but WS/48 ignores that. Weight on off change based on sqrt games played and %MP * (1 - %MP) - exactly 50% means most reliable.
     private void addOnOffAdjustments() {
-        int totalMinutesIndex = colNames.indexOf("MP");
-        int percentIndex = colNames.indexOf("%MP");
-        int gamesIndex = colNames.indexOf("G");
-        int offenseOnOffIndex = colNames.indexOf("OoORtg");
-        int defenseOnOffIndex = colNames.indexOf("OoDRtg");
+        int minutesI = colNames.indexOf("MP"), percentI = colNames.indexOf("%MP"), gamesI = colNames.indexOf("G");
+        int offOOI = colNames.indexOf("OoORtg"), defOOI = colNames.indexOf("OoDRtg");
         for (List<Double> row : playerSeasons.values()) {
-            double gamesPlayed = row.get(gamesIndex);
-            double minutesPlayed = row.get(totalMinutesIndex);
-            // Adjusts for total games played and minutes per game. Benefits players who play more, as they will face
-            // harder competition, be more tired, etc. WS/48 ignores this.
-            double minuteAdjustment = minAdjCoeff * ((0.5 * Math.log(gamesPlayed) + Math.log(Math.max(minutesPlayed / gamesPlayed - 5, 1))
-                    + Math.sqrt((30 + minutesPlayed) / (gamesPlayed + 2))) - 10);
-            // Weight based on sqrt of games played and if they play exactly half the minutes,
-            // that means the data as as valid as possible, so multiply % by 1 - %.
-            double weight = onOffCoeff * Math.sqrt(gamesPlayed) * row.get(percentIndex) * (100 - row.get(percentIndex)) / 22500;
-            // Weight on off defense change more as traditional stats will capture the offensive difference more than
-            // steals, blocks and defensive rebounds can ever manage. Number should be between 1 and 2.
-            double value = row.get(offenseOnOffIndex) - 1.5 * row.get(defenseOnOffIndex);
-            row.add(value * weight);
+            double GP = row.get(gamesI), MP = row.get(minutesI);
+            double minuteAdjustment = minAdjCoeff * (0.5 * Math.log(GP) + Math.log(Math.max(MP / GP - 5, 1)) + Math.sqrt((30 + MP) / (GP + 2)));
+            double weight = onOffCoeff * Math.sqrt(GP) * row.get(percentI) * (100 - row.get(percentI)) / 22500;
+            row.add((row.get(offOOI) - 1.5 * row.get(defOOI)) * weight);
             row.add(minuteAdjustment);
         }
         normalize(colNames.size());

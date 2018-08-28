@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class Scraper {
+    //<editor-fold desc="Massive list of constants">
     // CSV delimiters
     public static final String CSV_SPLIT_BY = ",";
     public static final String NEW_LINE = "\n";
@@ -32,6 +33,7 @@ public class Scraper {
     private static final String[] onOffIgnorees = {"OoNtRtg", "OoNtPace", "OoNtTOV%", "OoNtEFG%", "OoNtBLK%", "OoNtSTL%",
             "OoNtAST%", "OoNtTRB%", "OoNtDRB%", "OoNtORB%", "OoNtEFG%", "OoOpBLK%", "OoOpSTL%", "OoOpAST%", "OoOpTRB%",
             "OoOpDRB%", "OoOpORB%", "OoOpPace", "OoTRB%", "OoTmBLK%", "OoTmSTL%", "OoTmAST%", "OoTmPace"};
+    //</editor-fold>
 
     public static void main(String[] args) throws Exception {
         parseSeason("GSW", 2016);
@@ -48,7 +50,6 @@ public class Scraper {
         readSeasonLink(parsedInfo);
         readOnOffLink(parsedInfo);
         parsedInfo.addAdjustments();
-//        parsedInfo.printAllInfo();
         parsedInfo.saveFile();
     }
 
