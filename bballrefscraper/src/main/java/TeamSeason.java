@@ -27,7 +27,8 @@ public class TeamSeason {
     }
 
     public String url() {
-        return Scraper.baseTeamUrl + team + "/" + year + ".html";
+        StringBuilder sb = new StringBuilder(Scraper.baseTeamUrl).append(team).append("/");
+        return sb.append(year).append(".html").toString();
     }
 
     public void printAllInfo() {
@@ -54,33 +55,26 @@ public class TeamSeason {
     private String rowCSV(String name) {
         StringBuilder line = new StringBuilder(name);
         List<Double> row = playerSeasons.get(name);
-        for (Double val : row) {
-            line.append(Scraper.CSV_SPLIT_BY);
-            line.append(val);
-        }
+        for (Double val : row)
+            line.append(Scraper.CSV_SPLIT_BY).append(val);
         return line.toString();
     }
 
     private String[] rowCSVs() {
         String[] csvs = new String[playerSeasons.size()];
         int i = 0;
-        for (String name : playerSeasons.keySet()) {
-            csvs[i] = rowCSV(name);
-            i += 1;
-        }
+        for (String name : playerSeasons.keySet())
+            csvs[i++] = rowCSV(name);
         return csvs;
     }
 
     public void saveFile() throws Exception {
         File f = new File(team + year + ".csv");
         FileWriter output = new FileWriter(f);
-        StringBuilder fileValue = new StringBuilder("Name");
-        fileValue.append(Scraper.CSV_SPLIT_BY);
-        fileValue.append(String.join(Scraper.CSV_SPLIT_BY, colNames));
-        fileValue.append(Scraper.NEW_LINE);
+        StringBuilder fileValue = new StringBuilder("Name").append(Scraper.CSV_SPLIT_BY);
+        fileValue.append(String.join(Scraper.CSV_SPLIT_BY, colNames)).append(Scraper.NEW_LINE);
         fileValue.append(String.join(Scraper.NEW_LINE, rowCSVs()));
-        output.append(fileValue);
-        output.flush();
+        output.append(fileValue).flush();
         output.close();
     }
 
@@ -88,16 +82,14 @@ public class TeamSeason {
         colNames.addAll(Arrays.asList(newColNames));
         for (int i = 0; i < names.length; i++) {
             List<Double> row = findOrCreateRow(names[i]);
-            for (double val : colVals[i]) {
+            for (double val : colVals[i])
                 row.add(val);
-            }
         }
     }
 
     private List<Double> findOrCreateRow(String name) {
-        if (!playerSeasons.containsKey(name)) {
+        if (!playerSeasons.containsKey(name))
             playerSeasons.put(name, new ArrayList<>());
-        }
         return playerSeasons.get(name);
     }
 
@@ -105,18 +97,16 @@ public class TeamSeason {
         int index = colNames.lastIndexOf(colName);
         if (index != -1) {
             colNames.remove(index);
-            for (List season : playerSeasons.values()) {
+            for (List season : playerSeasons.values())
                 season.remove(index);
-            }
             return true;
         }
         return false;
     }
 
     public void deleteCols(String[] cols) {
-        for (String name : cols) {
+        for (String name : cols)
             deleteCol(name);
-        }
     }
 
     public boolean deleteBlankCols() {
@@ -150,6 +140,11 @@ public class TeamSeason {
     public void addAdjustments() {
         addReboundingAdjustment();
         addOnOffAdjustments();
+//        TODO: uncomment this once on off adjustment normalization has been figured out
+//        colNames.add("AdjWS/48");
+//        int wsI = colNames.indexOf("WS/48"), rbI = colNames.indexOf("RBAdj"), ooI = colNames.indexOf("OoAdj"), minI = colNames.indexOf("MinAdj");
+//        for (List<Double> row : playerSeasons.values())
+//            row.add(row.get(wsI) + row.get(rbI) + row.get(ooI) + row.get(minI));
     }
 
     // Subtract a multiple of individual ORB/DRB% and add in a multiple of the effect that player has on
@@ -162,7 +157,7 @@ public class TeamSeason {
         for (List<Double> row : playerSeasons.values()) {
             double weight = rebCoeff * Math.sqrt(row.get(gamesI)) * row.get(percentI) * row.get(percentI) / 22500;
             double value = (row.get(netORBI) - row.get(orbI)) + (row.get(netDRBI) - row.get(drbI));
-            row.add(Math.floor(value * weight * 10000) / 10000);
+            row.add(value * weight);
         }
         normalize(colNames.size());
         colNames.add("RBAdj");
@@ -177,10 +172,9 @@ public class TeamSeason {
         int offOOI = colNames.indexOf("OoORtg"), defOOI = colNames.indexOf("OoDRtg");
         for (List<Double> row : playerSeasons.values()) {
             double GP = row.get(gamesI), MP = row.get(minutesI);
-            double minuteAdjustment = minAdjCoeff * (0.5 * Math.log(GP) + Math.log(Math.max(MP / GP - 5, 1)) + Math.sqrt((30 + MP) / (GP + 2)));
             double weight = onOffCoeff * Math.sqrt(GP) * row.get(percentI) * (100 - row.get(percentI)) / 22500;
             row.add((row.get(offOOI) - 1.5 * row.get(defOOI)) * weight);
-            row.add(minuteAdjustment);
+            row.add(minAdjCoeff * (0.5 * Math.log(GP) + Math.log(Math.max(MP / GP - 5, 1)) + Math.sqrt((30 + MP) / (GP + 2))));
         }
         normalize(colNames.size());
         colNames.add("OoAdj");
