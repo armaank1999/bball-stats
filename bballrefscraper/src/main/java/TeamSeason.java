@@ -1,4 +1,3 @@
-import java.io.File;
 import java.io.FileWriter;
 import java.util.List;
 import java.util.ArrayList;
@@ -27,29 +26,19 @@ public class TeamSeason {
     }
 
     public String url() {
-        StringBuilder sb = new StringBuilder(Scraper.baseTeamUrl).append(team).append("/");
-        return sb.append(year).append(".html").toString();
+        return Scraper.baseTeamUrl + team + "/" + year + ".html";
     }
 
     public void printAllInfo() {
-        System.out.println("Parsed from " + url());
-        System.out.printf("%-25s", "Name");
-        for (String colName : colNames) {
+        System.out.printf("Parsed from %s\nName                     ", url());
+        for (String colName : colNames)
             System.out.printf("%-9s", colName);
+        for (String name : playerSeasons.keySet()) {
+            System.out.printf("\n%-25s", name);
+            List<Double> row = playerSeasons.get(name);
+            for (Double val : row)
+                System.out.printf("%-9s", val);
         }
-        System.out.println();
-        for (String key : playerSeasons.keySet()) {
-            printRow(key);
-        }
-    }
-
-    private void printRow(String name) {
-        System.out.printf("%-25s", name);
-        List<Double> row = playerSeasons.get(name);
-        for (Double val : row) {
-            System.out.printf("%-9s", val);
-        }
-        System.out.println();
     }
 
     private String rowCSV(String name) {
@@ -69,8 +58,7 @@ public class TeamSeason {
     }
 
     public void saveFile() throws Exception {
-        File f = new File(team + year + ".csv");
-        FileWriter output = new FileWriter(f);
+        FileWriter output = new FileWriter(team + year + ".csv");
         StringBuilder fileValue = new StringBuilder("Name").append(Scraper.CSV_SPLIT_BY);
         fileValue.append(String.join(Scraper.CSV_SPLIT_BY, colNames)).append(Scraper.NEW_LINE);
         fileValue.append(String.join(Scraper.NEW_LINE, rowCSVs()));

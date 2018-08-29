@@ -43,6 +43,7 @@ public class Scraper {
 //        parseSeason("OKC", 2018);
 //        parseSeason("BOS", 2018);
 //        SeasonList allYears = SeasonList.seasonFromFile("years.csv");
+//        allYears.saveFile("parsed");
     }
 
     private static void parseSeason(String team, int year) throws Exception {
