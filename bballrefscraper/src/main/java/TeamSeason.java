@@ -135,16 +135,17 @@ public class TeamSeason {
 //            row.add(row.get(wsI) + row.get(rbI) + row.get(ooI) + row.get(minI));
     }
 
-    // Subtract a multiple of individual ORB/DRB% and add in a multiple of the effect that player has on
+    // Subtract a multiple of individual ORB/DRB% and add in the effect that player has on
     // the team rebounding wise to gauge actual impact/punish stat-padding, then normalize the column.
-    // Also pretty universally hurts centers, but I feel that advanced stats in general overhype them -
-    // e.g. Javale, David West, Zaza WS/48 are way higher than Klay's, so keeping this feature
+    // Also pretty universally hurts centers, but I feel that advanced stats in general overhype them
+    // Javale, David West, Zaza WS/48 are way higher than Klay's, so keeping this feature
     private void addReboundingAdjustment() {
         int percentI = colNames.indexOf("%MP"), gamesI = colNames.indexOf("G"), orbI = colNames.indexOf("ORB%"), drbI = colNames.indexOf("DRB%");
         int netORBI = colNames.indexOf("OoORB%"), netDRBI = colNames.indexOf("OoDRB%");
         for (List<Double> row : playerSeasons.values()) {
             double weight = rebCoeff * Math.sqrt(row.get(gamesI)) * row.get(percentI) * row.get(percentI) / 22500;
-            double value = (row.get(netORBI) - row.get(orbI)) + (row.get(netDRBI) - row.get(drbI));
+            // Subtract a multiple of ORB% and DRB%. Number should be somewhere between 0.5 and 1.
+            double value = (row.get(netORBI) - 0.75 * row.get(orbI)) + (row.get(netDRBI) - 0.75 * row.get(drbI));
             row.add(value * weight);
         }
         normalize(colNames.size());
@@ -168,6 +169,10 @@ public class TeamSeason {
         colNames.add("OoAdj");
         normalize(colNames.size());
         colNames.add("MinAdj");
+    }
+
+    public static void addRelativeInfo(SeasonList averages) {
+
     }
 
 //    Old potential formula from past project

@@ -35,23 +35,25 @@ public class Scraper {
             "OoOpDRB%", "OoOpORB%", "OoOpPace", "OoTRB%", "OoTmBLK%", "OoTmSTL%", "OoTmAST%", "OoTmPace"};
     //</editor-fold>
 
+    private static SeasonList allYears;
+
     public static void main(String[] args) throws Exception {
+//        allYears = SeasonList.seasonFromFile("years.csv");
+//        allYears.saveFile("parsed");
         parseSeason("GSW", 2016);
 //        parseSeason("CLE", 2009);
 //        parseSeason("LAL", 2009);
 //        parseSeason("DET", 2004);
 //        parseSeason("OKC", 2018);
 //        parseSeason("BOS", 2018);
-//        SeasonList allYears = SeasonList.seasonFromFile("years.csv");
-//        allYears.saveFile("parsed");
     }
 
     private static void parseSeason(String team, int year) throws Exception {
         TeamSeason parsedInfo = new TeamSeason(team, year);
         readSeasonLink(parsedInfo);
-        readOnOffLink(parsedInfo);
-        parsedInfo.addAdjustments();
-        parsedInfo.saveFile();
+//        readOnOffLink(parsedInfo);
+//        parsedInfo.addAdjustments();
+//        parsedInfo.saveFile();
     }
 
     private static void readOnOffLink(TeamSeason szn) throws Exception {
@@ -69,11 +71,25 @@ public class Scraper {
         // Then call our add rows helper to add the rows and remove the ones we don't want.
         String seasonLink = String.format("%s%s/%s.html", baseTeamUrl, szn.team, szn.year);
         Document statsDoc = Jsoup.connect(seasonLink).get();
-        Element blob = statsDoc.selectFirst("[role=main]");
-        addRows(szn, tableRows(blob, "div#all_advanced"), advancedCols);
-        szn.deleteCols(advancedIgnorees);
+//        Element blob = statsDoc.selectFirst("[role=main]");
+//        addRows(szn, tableRows(blob, "div#all_advanced"), advancedCols);
+//        szn.deleteCols(advancedIgnorees);
+        // TODO: Add back in once missing col issue is fixed (i.e. no 3pt%)
         // addRows(szn, tableRows(blob, "div#all_per_poss"), per100Cols);
         // szn.deleteCols(per100Ignorees);
+        Element teamInfo = statsDoc.selectFirst("div#info").selectFirst("div#meta").child(1);
+        String[] infoArr = teamInfo.outerHtml().split("\n");
+        ArrayList<String> importantInfo = new ArrayList<>();
+        for (String row : infoArr) {
+            if (row.contains("<p> <strong><")) {
+                importantInfo.add(row);
+            }
+        }
+        for (String importantRow : importantInfo) {
+            System.out.println(importantRow);
+        }
+        addTeamInfo(szn, importantInfo);
+//        szn.addRelativeInfo(allYears);
     }
 
     // Get only the lines that are in the tbody of a comment blob.
@@ -240,5 +256,9 @@ public class Scraper {
     private static String[] tableRows(Element container, String tableSelector) {
         Node blob = container.selectFirst(tableSelector);
         return tbodySeasons(blob.childNode(blob.childNodeSize() - 2).outerHtml().split("[\\r\\n]+"));
+    }
+
+    private static void addTeamInfo(TeamSeason szn, List<String> rows) {
+        
     }
 }

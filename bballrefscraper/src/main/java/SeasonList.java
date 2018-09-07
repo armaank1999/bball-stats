@@ -8,6 +8,8 @@ import java.util.Arrays;
 public class SeasonList {
     private final List<String> colNames = new ArrayList<>();
     private final List<ArrayList<Double>> years = new ArrayList<>();
+    private final List<String> teamColNames = new ArrayList<>();
+    private final List<String> teamAttributes = new ArrayList<>();
     public int firstSeason;
 
     private SeasonList(double fS) {
