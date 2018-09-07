@@ -33,6 +33,8 @@ public class Scraper {
     private static final String[] onOffIgnorees = {"OoNtRtg", "OoNtPace", "OoNtTOV%", "OoNtEFG%", "OoNtBLK%", "OoNtSTL%",
             "OoNtAST%", "OoNtTRB%", "OoNtDRB%", "OoNtORB%", "OoNtEFG%", "OoOpBLK%", "OoOpSTL%", "OoOpAST%", "OoOpTRB%",
             "OoOpDRB%", "OoOpORB%", "OoOpPace", "OoTRB%", "OoTmBLK%", "OoTmSTL%", "OoTmAST%", "OoTmPace"};
+    private static final String[] topTeamTableIgnorees = {};
+    private static final String[] bottomTeamTableIgnorees = {};
     //</editor-fold>
 
     // Want the averages of allYears to be a global variable, and it is static as there's only one overarching average file.
@@ -72,31 +74,24 @@ public class Scraper {
         // Then call our add rows helper to add the rows and remove the ones we don't want.
         String seasonLink = String.format("%s%s/%s.html", baseTeamUrl, szn.team, szn.year);
         Document statsDoc = Jsoup.connect(seasonLink).get();
-//        Element blob = statsDoc.selectFirst("[role=main]");
+        Element blob = statsDoc.selectFirst("[role=main]");
+        Node allFactors = blob.selectFirst("div#all_team_and_opponent");
+        String[] allFactorsTable = allFactors.childNode(allFactors.childNodeSize() - 2).outerHtml().split("[\\r\\n]+");
+        Node moreFactors = blob.selectFirst("div#all_team_misc");
+        String[] moreFactorsTable = moreFactors.childNode(moreFactors.childNodeSize() - 2).outerHtml().split("[\\r\\n]+");
 //        addRows(szn, tableRows(blob, "div#all_advanced"), advancedCols);
 //        szn.deleteCols(advancedIgnorees);
         // TODO: Add back in once missing col issue is fixed (i.e. no 3pt%)
         // addRows(szn, tableRows(blob, "div#all_per_poss"), per100Cols);
         // szn.deleteCols(per100Ignorees);
-        Element teamInfo = statsDoc.selectFirst("div#info").selectFirst("div#meta").child(1);
-        String[] infoArr = teamInfo.outerHtml().split("\n");
-        ArrayList<String> importantInfo = new ArrayList<>();
-        for (String row : infoArr) {
-            if (row.contains("<p> <strong><")) {
-                importantInfo.add(row);
-            }
-        }
-        for (String importantRow : importantInfo) {
-            System.out.println(importantRow);
-        }
-        addTeamInfo(szn, importantInfo);
+        addTeamInfo(szn, allFactorsTable, moreFactorsTable);
 //        szn.addRelativeInfo(allYears);
     }
 
     // Get only the lines that are in the tbody of a comment blob.
     private static String[] tbodySeasons(String[] allSeasons) {
-        int firstRow = tbodyLocation(allSeasons) + 1;
-        int numPlayers = tbodyEndLocation(allSeasons) - firstRow;
+        int firstRow = searchFromFront("<tbody>", allSeasons) + 1;
+        int numPlayers = searchFromEnd("</tbody>", allSeasons) - firstRow;
         String[] playerSeasons = new String[numPlayers];
         System.arraycopy(allSeasons, firstRow, playerSeasons, 0, numPlayers);
         return playerSeasons;
@@ -105,8 +100,8 @@ public class Scraper {
     // Get only the lines that are in the trs of a comment blob.
     private static String[] trSeasons(String[] allSeasons) {
         // First get all the rows that are actually in the table.
-        int lastIgnoredRow = trLocation(allSeasons);
-        int numPlayers = trEndLocation(allSeasons) - lastIgnoredRow + 1;
+        int lastIgnoredRow = searchFromFront("<tr ><th", allSeasons);
+        int numPlayers = searchFromEnd("</td></tr>", allSeasons) - lastIgnoredRow + 1;
         String[] playerSeasons = new String[numPlayers];
         System.arraycopy(allSeasons, lastIgnoredRow, playerSeasons, 0, numPlayers);
         // Now remove all the additional headers that are in between actual rows. Don't need to check last three
@@ -120,53 +115,20 @@ public class Scraper {
     }
 
     // helpers to find line numbers so the rest can be ignored, and then the relevant rows are parsed
-    private static int tbodyLocation(String[] htmlBlob) {
-        for (int i = 0; i < htmlBlob.length; i++) {
-            if (htmlBlob[i].contains("<tbody>")) {
+    private static int searchFromFront(String pattern, String[] rows) {
+        for (int i = 0; i < rows.length; i++) {
+            if (rows[i].contains(pattern))
                 return i;
-            }
         }
         return -1;
     }
 
-    private static int tbodyEndLocation(String[] htmlBlob) {
-        for (int i = htmlBlob.length - 1; i > 0; i--) {
-            if (htmlBlob[i].contains("</tbody>")) {
+    private static int searchFromEnd(String pattern, String[] rows) {
+        for (int i = rows.length - 1; i > 0; i--) {
+            if (rows[i].contains(pattern))
                 return i;
-            }
         }
         return -1;
-    }
-
-    private static int trLocation(String[] htmlBlob) {
-        for (int i = 0; i < htmlBlob.length; i++) {
-            if (htmlBlob[i].startsWith("<tr ><th")) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    private static int trEndLocation(String[] htmlBlob) {
-        for (int i = htmlBlob.length - 1; i > 0; i--) {
-            if (htmlBlob[i].contains("</td></tr>")) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    // reads a text file for its lines into a list
-    private static List<String> linesFromFile(String fileName) throws Exception {
-        String currLine;
-        ArrayList<String> blobs = new ArrayList<>();
-        BufferedReader br = new BufferedReader(new FileReader(fileName));
-        while ((currLine = br.readLine()) != null) {
-            if (currLine.length() > 0) {
-                blobs.add(currLine);
-            }
-        }
-        return blobs;
     }
 
     // functions to take the rows, parse them properly, and then add their info to the szn
@@ -259,7 +221,29 @@ public class Scraper {
         return tbodySeasons(blob.childNode(blob.childNodeSize() - 2).outerHtml().split("[\\r\\n]+"));
     }
 
-    private static void addTeamInfo(TeamSeason szn, List<String> rows) {
-
+    private static void addTeamInfo(TeamSeason szn, String[] topRows, String[] bottomRows) {
+        int firstUsedRow = searchFromFront("<tr>", topRows) + 1;
+        int numRows = searchFromEnd("  </tr>", topRows) - firstUsedRow;
+        String[] topLabelRows = new String[numRows];
+        System.arraycopy(topRows, firstUsedRow, topLabelRows, 0, numRows);
+        firstUsedRow = searchFromFront("<tr>", bottomRows) + 1;
+        numRows = searchFromEnd("  </tr>", bottomRows) - firstUsedRow;
+        String[] bottomLabelRows = new String[numRows];
+        System.arraycopy(bottomRows, firstUsedRow, bottomLabelRows, 0, numRows);
+        for (String row : topLabelRows)
+            System.out.println(row);
+        System.out.println();
+        for (String row : bottomLabelRows)
+            System.out.println(row);
+        String topTeamVal = topRows[searchFromEnd("Team/G", topRows)];
+        String bottomTeamVal = bottomRows[searchFromFront("<tr >", bottomRows)];
+        String[] topSplitArr = String.join("  ", topTeamVal.split("<.*?>")).split("  +");
+        String[] topRelevantArr = new String[topSplitArr.length - 5];
+        System.arraycopy(topSplitArr, 3, topRelevantArr, 0, topRelevantArr.length);
+        System.out.println(String.join(" ", topRelevantArr));
+        String[] bottomSplitArr = String.join("  ", bottomTeamVal.split("<.*?>")).split("  +");
+        String[] bottomRelevantArr = new String[bottomSplitArr.length - 10];
+        System.arraycopy(bottomSplitArr, 8, bottomRelevantArr, 0, bottomRelevantArr.length);
+        System.out.println(String.join(" ", bottomRelevantArr));
     }
 }
