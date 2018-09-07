@@ -35,6 +35,7 @@ public class Scraper {
             "OoOpDRB%", "OoOpORB%", "OoOpPace", "OoTRB%", "OoTmBLK%", "OoTmSTL%", "OoTmAST%", "OoTmPace"};
     //</editor-fold>
 
+    // Want the averages of allYears to be a global variable, and it is static as there's only one overarching average file.
     private static SeasonList allYears;
 
     public static void main(String[] args) throws Exception {
@@ -259,6 +260,6 @@ public class Scraper {
     }
 
     private static void addTeamInfo(TeamSeason szn, List<String> rows) {
-        
+
     }
 }

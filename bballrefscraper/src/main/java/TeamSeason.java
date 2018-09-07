@@ -6,11 +6,9 @@ import java.util.LinkedHashMap;
 import java.util.Arrays;
 
 public class TeamSeason {
-    // Arbitrary variables that should eventually be reevaluated. minAdjCoeff is definitely in the right order of magnitude.
-    // Each of these new stats should be addable to WS/48 and be reasonable afterwards, and the minAdj achieves that.
-    // Issue for onOffCoeff - some teams have super drastic differences (09 Cavs, 16 Warriors) while others have all players
+    // Scaling constants for new stats, which should be addable to WS/48, so minAdjCoeff is in the right order of magnitude.
+    // Issue for onOffCoeff - some teams have super drastic differences (09 Cavs, 16 Warriors) while others have players
     // close to each other (18 celtics, 04 Pistons). Divide by sqrt(stddev) or smth to partially normalize the gap?
-    // Completely normalizing will defeat the purpose though...
     private final static double minAdjCoeff = 0.02;
     private final static double onOffCoeff = 0.05;
     private final static double rebCoeff = 0.002;
@@ -19,6 +17,8 @@ public class TeamSeason {
     public final int year;
     private final List<String> colNames = new ArrayList<>();
     private final Map<String, ArrayList<Double>> playerSeasons = new LinkedHashMap<>();
+    private final List<String> teamColNames = new ArrayList<>();
+    private final List<String> teamAttributes = new ArrayList<>();
 
     public TeamSeason(String t, int y) {
         year = y;
@@ -101,7 +101,7 @@ public class TeamSeason {
         return deleteCol("") && deleteBlankCols();
     }
 
-//    OR the original
+//    Original
 //    public void deleteBlankCols() {
 //        while (deleteCol("")) {
 //        }
@@ -119,9 +119,8 @@ public class TeamSeason {
             total += row.get(colPos) * row.get(weightI);
         }
         double average = total / minutes;
-        for (List<Double> row : playerSeasons.values()) {
+        for (List<Double> row : playerSeasons.values())
             row.set(colPos, Math.floor(10000 * (row.get(colPos) - average)) / 10000);
-        }
     }
 
     // Adds column based on the other adjustment methods and add a new column for the sum of them.
@@ -140,10 +139,10 @@ public class TeamSeason {
     // Also pretty universally hurts centers, but I feel that advanced stats in general overhype them
     // Javale, David West, Zaza WS/48 are way higher than Klay's, so keeping this feature
     private void addReboundingAdjustment() {
-        int percentI = colNames.indexOf("%MP"), gamesI = colNames.indexOf("G"), orbI = colNames.indexOf("ORB%"), drbI = colNames.indexOf("DRB%");
-        int netORBI = colNames.indexOf("OoORB%"), netDRBI = colNames.indexOf("OoDRB%");
+        int percentI = colNames.indexOf("%MP"), gamesI = colNames.indexOf("G"), orbI = colNames.indexOf("ORB%"),
+                drbI = colNames.indexOf("DRB%"), netORBI = colNames.indexOf("OoORB%"), netDRBI = colNames.indexOf("OoDRB%");
         for (List<Double> row : playerSeasons.values()) {
-            double weight = rebCoeff * Math.sqrt(row.get(gamesI)) * row.get(percentI) * row.get(percentI) / 22500;
+            double weight = rebCoeff * Math.sqrt(row.get(gamesI)) * row.get(percentI) * (100 - row.get(percentI)) / 22500;
             // Subtract a multiple of ORB% and DRB%. Number should be somewhere between 0.5 and 1.
             double value = (row.get(netORBI) - 0.75 * row.get(orbI)) + (row.get(netDRBI) - 0.75 * row.get(drbI));
             row.add(value * weight);
@@ -157,8 +156,8 @@ public class TeamSeason {
     // Give points based on total games played minutes per game as clearly players who play more MPG are better
     // but WS/48 ignores that. Weight on off change based on sqrt games played and %MP * (1 - %MP) - exactly 50% means most reliable.
     private void addOnOffAdjustments() {
-        int minutesI = colNames.indexOf("MP"), percentI = colNames.indexOf("%MP"), gamesI = colNames.indexOf("G");
-        int offOOI = colNames.indexOf("OoORtg"), defOOI = colNames.indexOf("OoDRtg");
+        int minutesI = colNames.indexOf("MP"), percentI = colNames.indexOf("%MP"), gamesI = colNames.indexOf("G"),
+                offOOI = colNames.indexOf("OoORtg"), defOOI = colNames.indexOf("OoDRtg");
         for (List<Double> row : playerSeasons.values()) {
             double GP = row.get(gamesI), MP = row.get(minutesI);
             double weight = onOffCoeff * Math.sqrt(GP) * row.get(percentI) * (100 - row.get(percentI)) / 22500;
@@ -176,11 +175,11 @@ public class TeamSeason {
     }
 
 //    Old potential formula from past project
-//    /* Add Points based on the player's usage rate and scoring efficiency .08 term gives extra points for having extra usage
-//     to not overglorify low usage players; netEff term credits players for being efficient. WS formula uses .92 so I use this.
-//     Then add points for providing floor spacing. The /20 is arbitrary.
-//     One could theoretically add a FTr term but there are upsides (stop transition scoring, foul trouble) and downsides
-//     (less offensive boards) as well as momentum. */
+//    // Add Points based on the player's usage rate and scoring efficiency .08 term gives extra points for having extra usage
+//    // to not overglorify low usage players; netEff term credits players for being efficient. WS formula uses .92 so I use this.
+//    // Then add points for providing floor spacing. The /20 is arbitrary.
+//    // One could theoretically add a FTr term but there are upsides (stop transition scoring, foul trouble) and downsides
+//    // (less offensive boards) as well as momentum.
 //    private static double SPA(Season pS, Season yA) {
 //        double netEff = pS.getElem("TS%") - yA.getElem("TS%");
 //        double usage = pS.getElem("USG%");
