@@ -3,8 +3,6 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -33,7 +31,7 @@ public class Scraper {
     private static final String[] onOffIgnorees = {"OoNtRtg", "OoNtPace", "OoNtTOV%", "OoNtEFG%", "OoNtBLK%", "OoNtSTL%",
             "OoNtAST%", "OoNtTRB%", "OoNtDRB%", "OoNtORB%", "OoNtEFG%", "OoOpBLK%", "OoOpSTL%", "OoOpAST%", "OoOpTRB%",
             "OoOpDRB%", "OoOpORB%", "OoOpPace", "OoTRB%", "OoTmBLK%", "OoTmSTL%", "OoTmAST%", "OoTmPace"};
-    private static final String[] topTeamTableIgnorees = {};
+    private static final String[] topTeamTableIgnorees = {"STL", "TRB", "DRB", "ORB"};
     private static final String[] bottomTeamTableIgnorees = {};
     //</editor-fold>
 
@@ -221,29 +219,38 @@ public class Scraper {
         return tbodySeasons(blob.childNode(blob.childNodeSize() - 2).outerHtml().split("[\\r\\n]+"));
     }
 
+    // Takes the selected top and bottom rows from their comment blobs, parses them, and adds it
+    // to the TeamSeasons teamCols and teamVals.
     private static void addTeamInfo(TeamSeason szn, String[] topRows, String[] bottomRows) {
-        int firstUsedRow = searchFromFront("<tr>", topRows) + 1;
-        int numRows = searchFromEnd("  </tr>", topRows) - firstUsedRow;
+        int firstUsedRow = searchFromFront("<tr>", topRows) + 4;
+        int numRows = searchFromEnd("  </tr>", topRows) - firstUsedRow - 3;
         String[] topLabelRows = new String[numRows];
         System.arraycopy(topRows, firstUsedRow, topLabelRows, 0, numRows);
-        firstUsedRow = searchFromFront("<tr>", bottomRows) + 1;
-        numRows = searchFromEnd("  </tr>", bottomRows) - firstUsedRow;
+        firstUsedRow = searchFromFront("<tr>", bottomRows) + 8;
+        numRows = searchFromEnd("  </tr>", bottomRows) - firstUsedRow - 2;
         String[] bottomLabelRows = new String[numRows];
         System.arraycopy(bottomRows, firstUsedRow, bottomLabelRows, 0, numRows);
-        for (String row : topLabelRows)
-            System.out.println(row);
-        System.out.println();
-        for (String row : bottomLabelRows)
-            System.out.println(row);
+        String[] topLabels = new String[topLabelRows.length];
+        String[] bottomLabels = new String[bottomLabelRows.length];
+        for (int i = 0; i < topLabels.length; i++) {
+            topLabels[i] = topLabelRows[i].split("<*+ >")[1].split("<")[0];
+        }
+        for (int i = 0; i < bottomLabels.length; i++) {
+            bottomLabels[i] = bottomLabelRows[i].split("<*+ >")[1].split("<")[0];
+        }
+
         String topTeamVal = topRows[searchFromEnd("Team/G", topRows)];
         String bottomTeamVal = bottomRows[searchFromFront("<tr >", bottomRows)];
         String[] topSplitArr = String.join("  ", topTeamVal.split("<.*?>")).split("  +");
         String[] topRelevantArr = new String[topSplitArr.length - 5];
         System.arraycopy(topSplitArr, 3, topRelevantArr, 0, topRelevantArr.length);
-        System.out.println(String.join(" ", topRelevantArr));
         String[] bottomSplitArr = String.join("  ", bottomTeamVal.split("<.*?>")).split("  +");
         String[] bottomRelevantArr = new String[bottomSplitArr.length - 10];
         System.arraycopy(bottomSplitArr, 8, bottomRelevantArr, 0, bottomRelevantArr.length);
+
+        System.out.println(String.join(" ", topRelevantArr));
+        System.out.println(String.join(" ", topLabels));
         System.out.println(String.join(" ", bottomRelevantArr));
+        System.out.println(String.join(" ", bottomLabels));
     }
 }

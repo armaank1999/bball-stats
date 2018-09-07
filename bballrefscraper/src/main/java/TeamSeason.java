@@ -18,7 +18,7 @@ public class TeamSeason {
     private final List<String> colNames = new ArrayList<>();
     private final Map<String, ArrayList<Double>> playerSeasons = new LinkedHashMap<>();
     private final List<String> teamColNames = new ArrayList<>();
-    private final List<String> teamAttributes = new ArrayList<>();
+    private final List<Double> teamAttributes = new ArrayList<>();
 
     public TeamSeason(String t, int y) {
         year = y;
@@ -75,6 +75,12 @@ public class TeamSeason {
         }
     }
 
+    public void addTeamAttributes(String[] newColNames, double[] vals) {
+        teamColNames.addAll(Arrays.asList(newColNames));
+        for (double val : vals)
+            teamAttributes.add(val);
+    }
+
     private List<Double> findOrCreateRow(String name) {
         if (!playerSeasons.containsKey(name))
             playerSeasons.put(name, new ArrayList<>());
@@ -92,9 +98,22 @@ public class TeamSeason {
         return false;
     }
 
+    private void deleteTeamCol(String colName) {
+        int index = teamColNames.lastIndexOf(colName);
+        if (index != -1) {
+            teamColNames.remove(index);
+            teamAttributes.remove(index);
+        }
+    }
+
     public void deleteCols(String[] cols) {
         for (String name : cols)
             deleteCol(name);
+    }
+
+    public void deleteTeamCols(String[] cols) {
+        for (String name : cols)
+            deleteTeamCol(name);
     }
 
     public boolean deleteBlankCols() {
