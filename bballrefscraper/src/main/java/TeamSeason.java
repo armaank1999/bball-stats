@@ -99,6 +99,13 @@ public class TeamSeason {
         return playerSeasons.get(name);
     }
 
+    private int[] getTeamCols(String[] names) {
+        int[] returnee = new int[names.length];
+        for (int i = 0; i < names.length; i++)
+            returnee[i] = teamColNames.indexOf(names[i]);
+        return returnee;
+    }
+
     public void deleteCols(String[] cols) {
         for (String name : cols)
             deleteCol(name);
@@ -133,7 +140,7 @@ public class TeamSeason {
     }
 
     // Takes a column and adjusts each value so that the weighted sum is 0, then round to 4 decimal places.
-    public void normalize(int colPos) {
+    private void normalize(int colPos) {
         double total = 0, minutes = 0;
         int weightI = playerColNames.indexOf("MP");
         for (List<Double> row : playerSeasons.values()) {
@@ -162,7 +169,7 @@ public class TeamSeason {
     // Javale, David West, Zaza WS/48 are way higher than Klay's, so keeping this feature
     private void addReboundingAdjustment() {
         int percentI = playerColNames.indexOf("%MP"), gamesI = playerColNames.indexOf("G"), orbI = playerColNames.indexOf("ORB%"),
-                drbI = playerColNames.indexOf("DRB%"), netORBI = playerColNames.indexOf("OoORB%"), netDRBI = playerColNames.indexOf("OoDRB%");
+            drbI = playerColNames.indexOf("DRB%"), netORBI = playerColNames.indexOf("OoORB%"), netDRBI = playerColNames.indexOf("OoDRB%");
         for (List<Double> row : playerSeasons.values()) {
             double weight = rebCoeff * Math.sqrt(row.get(gamesI)) * row.get(percentI) * (100 - row.get(percentI)) / 22500;
             // Subtract a multiple of ORB% and DRB%. Number should be somewhere between 0.5 and 1.
@@ -179,7 +186,7 @@ public class TeamSeason {
     // but WS/48 ignores that. Weight on off change based on sqrt games and %MP * (1 - %MP) - stddev for binomial.
     private void addOnOffAdjustments() {
         int minutesI = playerColNames.indexOf("MP"), percentI = playerColNames.indexOf("%MP"), gamesI = playerColNames.indexOf("G"),
-                offOOI = playerColNames.indexOf("OoORtg"), defOOI = playerColNames.indexOf("OoDRtg");
+            offOOI = playerColNames.indexOf("OoORtg"), defOOI = playerColNames.indexOf("OoDRtg");
         for (List<Double> row : playerSeasons.values()) {
             double GP = row.get(gamesI), MP = row.get(minutesI);
             double weight = onOffCoeff * Math.sqrt(GP) * row.get(percentI) * (100 - row.get(percentI)) / 22500;
@@ -193,7 +200,24 @@ public class TeamSeason {
     }
 
     public void addRelativeInfo(SeasonList averages) {
+        List<Double> comparee = averages.getYear(year);
+        String[] names = {"3P%", "2P%", "FT%", "ORtg", "ORB%", "AST%", "TS%", "eFG%", "FT/FGA", "TOV%"};
+        int[] compareePositions = averages.getCols(names);
+        int[] ourPositions = getTeamCols(names);
+    }
 
+    // Adjust all the stats to per 100 poss, and also add in TS%.
+    public void per100ize() {
+        int minutesI = teamColNames.indexOf("MP"), paceI = teamColNames.indexOf("Pace");
+        double adjustmentFactor = 24000.0 / (teamAttributes.get(minutesI) * teamAttributes.get(paceI));
+        int[] positions = getTeamCols(new String[]{"FG", "FGA", "3P", "3PA", "2P", "2PA", "FT", "FTA", "AST", "BLK", "TOV"});
+        for (int position : positions)
+            teamAttributes.set(position, Math.floor(100 * teamAttributes.get(position) * adjustmentFactor) / 100);
+        teamColNames.add("TS%");
+        teamAttributes.add(Math.floor(10000 * ((3 * teamAttributes.get(positions[2]) + 2 * teamAttributes.get(positions[4]) +
+            teamAttributes.get(positions[6])) / (2 * teamAttributes.get(positions[1]) + 0.88 * teamAttributes.get(positions[7])))) / 10000);
+        teamColNames.add("AST%");
+        teamAttributes.add(Math.floor(10000 * teamAttributes.get(positions[8]) / teamAttributes.get(positions[0])) / 10000);
     }
 
 //    Old potential formula from past project

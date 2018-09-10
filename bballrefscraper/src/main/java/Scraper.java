@@ -14,38 +14,36 @@ public class Scraper {
 
     // A representation of the colNames of each respective table.
     private static final String[] advancedCols = {"Age", "G", "MP", "PER", "TS%", "3PAr", "FTr", "ORB%", "DRB%", "TRB%",
-            "AST%", "STL%", "BLK%", "TOV%", "USG%", "OWS", "DWS", "WS", "WS/48", "OBPM", "DBPM", "BPM", "VORP"};
+        "AST%", "STL%", "BLK%", "TOV%", "USG%", "OWS", "DWS", "WS", "WS/48", "OBPM", "DBPM", "BPM", "VORP"};
     // Pre 1974 advanced stats (post then we get ORB/DRB and BPM). Pre 1964 no AST% (since there's no OFFICIAL pace stat
     // even though estimate is there) either and pre 1952 no minutes, but ignoring the former for now and the latter forever.
     private static final String[] advancedColsOld = {"Age", "G", "MP", "PER", "TS%", "3PAr", "FTr", "TRB%",
-            "AST%", "STL%", "BLK%", "TOV%", "USG%", "OWS", "DWS", "WS", "WS/48"};
+        "AST%", "STL%", "BLK%", "TOV%", "USG%", "OWS", "DWS", "WS", "WS/48"};
     private static final String[] per100Cols = {"Age", "G", "GS", "MP", "FG", "FGA", "FG%", "3P", "3PA", "3P%", "2P", "2PA", "2P%",
-            "FT", "FTA", "FT%", "ORB", "DRB", "TRB", "AST", "STL", "BLK", "TOV", "PF", "PTS", "ORtg", "DRtg"};
+        "FT", "FTA", "FT%", "ORB", "DRB", "TRB", "AST", "STL", "BLK", "TOV", "PF", "PTS", "ORtg", "DRtg"};
     // Only apply for post 2000 seasons.
     private static final String[] onOffCols = {"%MP", "OoTmEFG%", "OoORB%", "OoDRB%", "OoTRB%", "OoTmAST%", "OoTmSTL%",
-            "OoTmBLK%", "OoTmTOV%", "OoTmPace", "OoORtg", "OoOpEFG%", "OoOpORB%", "OoOpDRB%", "OoOpTRB%", "OoOpAST%", "OoOpSTL%",
-            "OoOpBLK%", "OoOpTOV%", "OoOpPace", "OoDRtg", "OoNtEFG%", "OoNtORB%", "OoNtDRB%", "OoNtTRB%", "OoNtAST%", "OoNtSTL%",
-            "OoNtBLK%", "OoNtTOV%", "OoNtPace", "OoNtRtg"};
-    private static final String[] topTableCols = {"MP", "FG", "FGA", "FG%"};
-    private static final String[] bottomTableCols = {};
+        "OoTmBLK%", "OoTmTOV%", "OoTmPace", "OoORtg", "OoOpEFG%", "OoOpORB%", "OoOpDRB%", "OoOpTRB%", "OoOpAST%", "OoOpSTL%",
+        "OoOpBLK%", "OoOpTOV%", "OoOpPace", "OoDRtg", "OoNtEFG%", "OoNtORB%", "OoNtDRB%", "OoNtTRB%", "OoNtAST%", "OoNtSTL%",
+        "OoNtBLK%", "OoNtTOV%", "OoNtPace", "OoNtRtg"};
 
     // Cols from each table that are not needed. Per 100 also has duplicate cols with advanced, so those are included.
     private static final String[] advancedIgnorees = {"VORP", "DBPM", "OBPM", "DWS", "OWS", "TRB%", "PER"};
     private static final String[] per100Ignorees = {"PF", "TRB", "ORB", "DRB", "MP", "GS", "G", "Age"};
     private static final String[] onOffIgnorees = {"OoNtRtg", "OoNtPace", "OoNtTOV%", "OoNtEFG%", "OoNtBLK%", "OoNtSTL%",
-            "OoNtAST%", "OoNtTRB%", "OoNtDRB%", "OoNtORB%", "OoNtEFG%", "OoOpBLK%", "OoOpSTL%", "OoOpAST%", "OoOpTRB%",
-            "OoOpDRB%", "OoOpORB%", "OoOpPace", "OoTRB%", "OoTmBLK%", "OoTmSTL%", "OoTmAST%", "OoTmPace"};
-    private static final String[] topTeamTableIgnorees = {"STL", "TRB", "DRB", "ORB", "FTr"};
-    private static final String[] bottomTeamTableIgnorees = {};
+        "OoNtAST%", "OoNtTRB%", "OoNtDRB%", "OoNtORB%", "OoNtEFG%", "OoOpBLK%", "OoOpSTL%", "OoOpAST%", "OoOpTRB%",
+        "OoOpDRB%", "OoOpORB%", "OoOpPace", "OoTRB%", "OoTmBLK%", "OoTmSTL%", "OoTmAST%", "OoTmPace"};
+    private static final String[] topTeamTableIgnorees = {"STL", "TRB", "DRB", "ORB"};
+    private static final String[] bottomTeamTableIgnorees = {"FTr"};
     private static final String[] teamRepeats = {"eFG%", "TOV%", "FT/FGA"};
-    private static final String[] teamRenames = {"OppeFG%", "OppTOV%", "OppFT/FGA"};
+    private static final String[] teamRenames = {"OppeFG%", "OppTOV%", "OppFT/FG"};
     //</editor-fold>
 
     // Want the averages of allYears to be a global variable, and it is static as there's only one overarching average file.
     private static SeasonList allYears;
 
     public static void main(String[] args) throws Exception {
-//        allYears = SeasonList.readSeasonList("years.csv");
+        allYears = SeasonList.readSeasonList("years.csv");
 //        allYears.saveFile("parsed");
         parseSeason("GSW", 2016);
 //        parseSeason("CLE", 2009);
@@ -238,29 +236,28 @@ public class Scraper {
         System.arraycopy(bottomRows, firstUsedRow, bottomLabelRows, 0, numRows);
         String[] topLabels = new String[topLabelRows.length];
         String[] bottomLabels = new String[bottomLabelRows.length];
-        for (int i = 0; i < topLabels.length; i++) {
+        for (int i = 0; i < topLabels.length; i++)
             topLabels[i] = topLabelRows[i].split("<*+ >")[1].split("<")[0];
-        }
-        for (int i = 0; i < bottomLabels.length; i++) {
+        for (int i = 0; i < bottomLabels.length; i++)
             bottomLabels[i] = bottomLabelRows[i].split("<*+ >")[1].split("<")[0];
-        }
 
         String topTeamVal = topRows[searchFromEnd("Team/G", topRows)];
         String bottomTeamVal = bottomRows[searchFromFront("<tr >", bottomRows)];
         String[] topSplitArr = String.join("  ", topTeamVal.split("<.*?>")).split("  +");
         double[] topRelevantArr = new double[topSplitArr.length - 4];
-        for (int i = 0; i < topRelevantArr.length; i++) {
+        for (int i = 0; i < topRelevantArr.length; i++)
             topRelevantArr[i] = Double.parseDouble(topSplitArr[i+2]);
-        }
         String[] bottomSplitArr = String.join("  ", bottomTeamVal.split("<.*?>")).split("  +");
         double[] bottomRelevantArr = new double[bottomSplitArr.length - 10];
-        for (int i = 0; i < bottomRelevantArr.length; i++) {
+        for (int i = 0; i < bottomRelevantArr.length; i++)
             bottomRelevantArr[i] = Double.parseDouble(bottomSplitArr[i+8]);
-        }
 
         szn.addTeamAttributes(topLabels, topRelevantArr);
-        szn.addTeamAttributes(bottomLabels, bottomRelevantArr);
         szn.deleteTeamCols(topTeamTableIgnorees);
+        szn.addTeamAttributes(bottomLabels, bottomRelevantArr);
+        szn.deleteTeamCols(bottomTeamTableIgnorees);
         szn.renameTeamCols(teamRepeats, teamRenames);
+        szn.per100ize();
+        szn.addRelativeInfo(allYears);
     }
 }

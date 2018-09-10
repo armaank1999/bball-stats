@@ -51,8 +51,11 @@ public class SeasonList {
         return years.get(position);
     }
 
-    public int getCol(String name) {
-        return colNames.indexOf(name);
+    public int[] getCols(String[] names) {
+        int[] returnee = new int[names.length];
+        for (int i = 0; i < names.length; i++)
+            returnee[i] = colNames.indexOf(names[i]);
+        return returnee;
     }
 
     public void printAllInfo() {
