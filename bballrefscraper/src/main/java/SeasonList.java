@@ -8,23 +8,18 @@ import java.util.Arrays;
 public class SeasonList {
     private final List<String> colNames = new ArrayList<>();
     private final List<ArrayList<Double>> years = new ArrayList<>();
-    public int firstSeason;
+    private int firstSeason;
 
     private SeasonList(double fS) {
         firstSeason = (int) fS;
     }
 
-    private SeasonList(int fS) {
-        firstSeason = fS;
-    }
-
-    public static SeasonList seasonFromFile(String fileName) throws Exception {
-        String[] currVals;
+    public static SeasonList readSeasonList(String fileName) throws Exception {
         BufferedReader br = new BufferedReader(new FileReader(fileName));
-        String[] colNames = br.readLine().split(Scraper.CSV_SPLIT_BY);
-        // Read first line outside of loop to get firstSeason
+        // Read first lines outside of loop to get firstSeason and colNames
+        String[] colNames = br.readLine().split(",");
         String line = br.readLine();
-        currVals = line.split(Scraper.CSV_SPLIT_BY);
+        String[] currVals = line.split(",");
         SeasonList returnee = new SeasonList(Double.parseDouble(currVals[0]));
         ArrayList<Double> convertee = new ArrayList<>();
         returnee.colNames.addAll(Arrays.asList(colNames));
@@ -32,13 +27,21 @@ public class SeasonList {
             convertee.add(Double.parseDouble(val));
         returnee.years.add(convertee);
         while ((line = br.readLine()) != null) {
-            currVals = line.split(Scraper.CSV_SPLIT_BY);
+            currVals = line.split(",");
             convertee = new ArrayList<>();
             for (String val : currVals)
                 convertee.add(Double.parseDouble(val));
             returnee.years.add(convertee);
         }
         return returnee;
+    }
+
+    private static String rowCSV(List<Double> year) {
+        StringBuilder sb = new StringBuilder();
+        for (Double stat : year)
+            sb.append(stat).append(",");
+        sb.setLength(sb.length() - 1);
+        return sb.toString();
     }
 
     public List<Double> getYear(int year) {
@@ -64,8 +67,8 @@ public class SeasonList {
 
     public void saveFile(String name) throws Exception {
         StringBuilder sb = new StringBuilder();
-        sb.append(String.join(Scraper.CSV_SPLIT_BY, colNames)).append(Scraper.NEW_LINE);
-        sb.append(String.join(Scraper.NEW_LINE, rowCSVs()));
+        sb.append(String.join(",", colNames)).append("\n");
+        sb.append(String.join("\n", rowCSVs()));
         FileWriter output = new FileWriter(name + ".csv");
         output.append(sb).flush();
         output.close();
@@ -77,14 +80,6 @@ public class SeasonList {
         for (ArrayList<Double> year : years)
             csvs[i++] = rowCSV(year);
         return csvs;
-    }
-
-    private static String rowCSV(List<Double> year) {
-        StringBuilder sb = new StringBuilder();
-        for (Double stat : year)
-            sb.append(stat).append(Scraper.CSV_SPLIT_BY);
-        sb.setLength(sb.length() - 1);
-        return sb.toString();
     }
 
 }

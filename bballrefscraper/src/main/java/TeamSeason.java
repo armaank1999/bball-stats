@@ -15,7 +15,7 @@ public class TeamSeason {
 
     public final String team;
     public final int year;
-    private final List<String> colNames = new ArrayList<>();
+    private final List<String> playerColNames = new ArrayList<>();
     private final Map<String, ArrayList<Double>> playerSeasons = new LinkedHashMap<>();
     private final List<String> teamColNames = new ArrayList<>();
     private final List<Double> teamAttributes = new ArrayList<>();
@@ -30,13 +30,20 @@ public class TeamSeason {
     }
 
     public void printAllInfo() {
-        System.out.printf("Parsed from %s\nName                     ", url());
-        for (String colName : colNames)
+        System.out.printf("Parsed from %s\n", url());
+        System.out.println("Team Stats: ");
+        for (String colName : teamColNames)
+            System.out.printf("%-9s", colName);
+        System.out.println();
+        for (Double val : teamAttributes)
+            System.out.printf("%-9s", val);
+        System.out.println();
+        System.out.print("Name                       ");
+        for (String colName : playerColNames)
             System.out.printf("%-9s", colName);
         for (String name : playerSeasons.keySet()) {
-            System.out.printf("\n%-25s", name);
-            List<Double> row = playerSeasons.get(name);
-            for (Double val : row)
+            System.out.printf("\n%-27s", name);
+            for (Double val : playerSeasons.get(name))
                 System.out.printf("%-9s", val);
         }
     }
@@ -45,7 +52,7 @@ public class TeamSeason {
         StringBuilder line = new StringBuilder(name);
         List<Double> row = playerSeasons.get(name);
         for (Double val : row)
-            line.append(Scraper.CSV_SPLIT_BY).append(val);
+            line.append(",").append(val);
         return line.toString();
     }
 
@@ -59,15 +66,15 @@ public class TeamSeason {
 
     public void saveFile() throws Exception {
         FileWriter output = new FileWriter(team + year + ".csv");
-        StringBuilder fileValue = new StringBuilder("Name").append(Scraper.CSV_SPLIT_BY);
-        fileValue.append(String.join(Scraper.CSV_SPLIT_BY, colNames)).append(Scraper.NEW_LINE);
-        fileValue.append(String.join(Scraper.NEW_LINE, rowCSVs()));
+        StringBuilder fileValue = new StringBuilder("Name,");
+        fileValue.append(String.join(",", playerColNames)).append("\n");
+        fileValue.append(String.join("\n", rowCSVs()));
         output.append(fileValue).flush();
         output.close();
     }
 
     public void addPlayers(String[] newColNames, String[] names, double[][] colVals) {
-        colNames.addAll(Arrays.asList(newColNames));
+        playerColNames.addAll(Arrays.asList(newColNames));
         for (int i = 0; i < names.length; i++) {
             List<Double> row = findOrCreateRow(names[i]);
             for (double val : colVals[i])
@@ -81,16 +88,35 @@ public class TeamSeason {
             teamAttributes.add(val);
     }
 
+    public void renameTeamCols(String[] originals, String[] news) {
+        for (int i = 0; i < originals.length; i++)
+            teamColNames.set(teamColNames.lastIndexOf(originals[i]), news[i]);
+    }
+
     private List<Double> findOrCreateRow(String name) {
         if (!playerSeasons.containsKey(name))
             playerSeasons.put(name, new ArrayList<>());
         return playerSeasons.get(name);
     }
 
+    public void deleteCols(String[] cols) {
+        for (String name : cols)
+            deleteCol(name);
+    }
+
+    public void deleteTeamCols(String[] cols) {
+        for (String name : cols)
+            deleteTeamCol(name);
+    }
+
+    public void deleteBlankCols() {
+        while (deleteCol(""));
+    }
+
     private boolean deleteCol(String colName) {
-        int index = colNames.lastIndexOf(colName);
+        int index = playerColNames.lastIndexOf(colName);
         if (index != -1) {
-            colNames.remove(index);
+            playerColNames.remove(index);
             for (List season : playerSeasons.values())
                 season.remove(index);
             return true;
@@ -106,33 +132,10 @@ public class TeamSeason {
         }
     }
 
-    public void deleteCols(String[] cols) {
-        for (String name : cols)
-            deleteCol(name);
-    }
-
-    public void deleteTeamCols(String[] cols) {
-        for (String name : cols)
-            deleteTeamCol(name);
-    }
-
-    public boolean deleteBlankCols() {
-        return deleteCol("") && deleteBlankCols();
-    }
-
-//    Original
-//    public void deleteBlankCols() {
-//        while (deleteCol("")) {
-//        }
-//    }
-//
-//    Not sure which is better practice/faster.
-
-    // Takes a column and adjusts each player's value so that the net minute-weighted sum is 0.
-    // Then round all the values to 4 decimal places.
+    // Takes a column and adjusts each value so that the weighted sum is 0, then round to 4 decimal places.
     public void normalize(int colPos) {
         double total = 0, minutes = 0;
-        int weightI = colNames.indexOf("MP");
+        int weightI = playerColNames.indexOf("MP");
         for (List<Double> row : playerSeasons.values()) {
             minutes += row.get(weightI);
             total += row.get(colPos) * row.get(weightI);
@@ -147,49 +150,49 @@ public class TeamSeason {
         addReboundingAdjustment();
         addOnOffAdjustments();
 //        TODO: uncomment this once on off adjustment normalization has been figured out
-//        colNames.add("AdjWS/48");
-//        int wsI = colNames.indexOf("WS/48"), rbI = colNames.indexOf("RBAdj"), ooI = colNames.indexOf("OoAdj"), minI = colNames.indexOf("MinAdj");
+//        playerColNames.add("AdjWS/48");
+//        int wsI = playerColNames.indexOf("WS/48"), rbI = playerColNames.indexOf("RBAdj"), ooI = playerColNames.indexOf("OoAdj"), minI = playerColNames.indexOf("MinAdj");
 //        for (List<Double> row : playerSeasons.values())
 //            row.add(row.get(wsI) + row.get(rbI) + row.get(ooI) + row.get(minI));
     }
 
-    // Subtract a multiple of individual ORB/DRB% and add in the effect that player has on
+    // Subtract a multiple of individual ORB/DRB% and add in the on-off effect that player has on
     // the team rebounding wise to gauge actual impact/punish stat-padding, then normalize the column.
     // Also pretty universally hurts centers, but I feel that advanced stats in general overhype them
     // Javale, David West, Zaza WS/48 are way higher than Klay's, so keeping this feature
     private void addReboundingAdjustment() {
-        int percentI = colNames.indexOf("%MP"), gamesI = colNames.indexOf("G"), orbI = colNames.indexOf("ORB%"),
-                drbI = colNames.indexOf("DRB%"), netORBI = colNames.indexOf("OoORB%"), netDRBI = colNames.indexOf("OoDRB%");
+        int percentI = playerColNames.indexOf("%MP"), gamesI = playerColNames.indexOf("G"), orbI = playerColNames.indexOf("ORB%"),
+                drbI = playerColNames.indexOf("DRB%"), netORBI = playerColNames.indexOf("OoORB%"), netDRBI = playerColNames.indexOf("OoDRB%");
         for (List<Double> row : playerSeasons.values()) {
             double weight = rebCoeff * Math.sqrt(row.get(gamesI)) * row.get(percentI) * (100 - row.get(percentI)) / 22500;
             // Subtract a multiple of ORB% and DRB%. Number should be somewhere between 0.5 and 1.
             double value = (row.get(netORBI) - 0.75 * row.get(orbI)) + (row.get(netDRBI) - 0.75 * row.get(drbI));
             row.add(value * weight);
         }
-        normalize(colNames.size());
-        colNames.add("RBAdj");
+        normalize(playerColNames.size());
+        playerColNames.add("RBAdj");
     }
 
-    // Add/subtract points based on how much better the team/opponent's offensive ratings are.
-    // Weigh defensive impact more as that is less captured by the other baseline advanced stats - number should be between 1 and 2.
+    // Add/subtract points based on how much better the team/opponent's offensive ratings are. Weigh defensive impact more
+    // as that is less captured by the other baseline advanced stats - number should be between 1 and 2.
     // Give points based on total games played minutes per game as clearly players who play more MPG are better
-    // but WS/48 ignores that. Weight on off change based on sqrt games played and %MP * (1 - %MP) - exactly 50% means most reliable.
+    // but WS/48 ignores that. Weight on off change based on sqrt games and %MP * (1 - %MP) - stddev for binomial.
     private void addOnOffAdjustments() {
-        int minutesI = colNames.indexOf("MP"), percentI = colNames.indexOf("%MP"), gamesI = colNames.indexOf("G"),
-                offOOI = colNames.indexOf("OoORtg"), defOOI = colNames.indexOf("OoDRtg");
+        int minutesI = playerColNames.indexOf("MP"), percentI = playerColNames.indexOf("%MP"), gamesI = playerColNames.indexOf("G"),
+                offOOI = playerColNames.indexOf("OoORtg"), defOOI = playerColNames.indexOf("OoDRtg");
         for (List<Double> row : playerSeasons.values()) {
             double GP = row.get(gamesI), MP = row.get(minutesI);
             double weight = onOffCoeff * Math.sqrt(GP) * row.get(percentI) * (100 - row.get(percentI)) / 22500;
             row.add((row.get(offOOI) - 1.5 * row.get(defOOI)) * weight);
             row.add(minAdjCoeff * (0.5 * Math.log(GP) + Math.log(Math.max(MP / GP - 5, 1)) + Math.sqrt((30 + MP) / (GP + 2))));
         }
-        normalize(colNames.size());
-        colNames.add("OoAdj");
-        normalize(colNames.size());
-        colNames.add("MinAdj");
+        normalize(playerColNames.size());
+        playerColNames.add("OoAdj");
+        normalize(playerColNames.size());
+        playerColNames.add("MinAdj");
     }
 
-    public static void addRelativeInfo(SeasonList averages) {
+    public void addRelativeInfo(SeasonList averages) {
 
     }
 

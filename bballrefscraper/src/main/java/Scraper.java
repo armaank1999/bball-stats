@@ -9,21 +9,25 @@ import java.util.List;
 
 public class Scraper {
     //<editor-fold desc="Massive list of constants">
-    // CSV delimiters
-    public static final String CSV_SPLIT_BY = ",";
-    public static final String NEW_LINE = "\n";
     // The common portion of the url from everywhere we read from.
     public static final String baseTeamUrl = "https://www.basketball-reference.com/teams/";
 
     // A representation of the colNames of each respective table.
     private static final String[] advancedCols = {"Age", "G", "MP", "PER", "TS%", "3PAr", "FTr", "ORB%", "DRB%", "TRB%",
             "AST%", "STL%", "BLK%", "TOV%", "USG%", "OWS", "DWS", "WS", "WS/48", "OBPM", "DBPM", "BPM", "VORP"};
+    // Pre 1974 advanced stats (post then we get ORB/DRB and BPM). Pre 1964 no AST% (since there's no OFFICIAL pace stat
+    // even though estimate is there) either and pre 1952 no minutes, but ignoring the former for now and the latter forever.
+    private static final String[] advancedColsOld = {"Age", "G", "MP", "PER", "TS%", "3PAr", "FTr", "TRB%",
+            "AST%", "STL%", "BLK%", "TOV%", "USG%", "OWS", "DWS", "WS", "WS/48"};
     private static final String[] per100Cols = {"Age", "G", "GS", "MP", "FG", "FGA", "FG%", "3P", "3PA", "3P%", "2P", "2PA", "2P%",
             "FT", "FTA", "FT%", "ORB", "DRB", "TRB", "AST", "STL", "BLK", "TOV", "PF", "PTS", "ORtg", "DRtg"};
+    // Only apply for post 2000 seasons.
     private static final String[] onOffCols = {"%MP", "OoTmEFG%", "OoORB%", "OoDRB%", "OoTRB%", "OoTmAST%", "OoTmSTL%",
             "OoTmBLK%", "OoTmTOV%", "OoTmPace", "OoORtg", "OoOpEFG%", "OoOpORB%", "OoOpDRB%", "OoOpTRB%", "OoOpAST%", "OoOpSTL%",
             "OoOpBLK%", "OoOpTOV%", "OoOpPace", "OoDRtg", "OoNtEFG%", "OoNtORB%", "OoNtDRB%", "OoNtTRB%", "OoNtAST%", "OoNtSTL%",
             "OoNtBLK%", "OoNtTOV%", "OoNtPace", "OoNtRtg"};
+    private static final String[] topTableCols = {"MP", "FG", "FGA", "FG%"};
+    private static final String[] bottomTableCols = {};
 
     // Cols from each table that are not needed. Per 100 also has duplicate cols with advanced, so those are included.
     private static final String[] advancedIgnorees = {"VORP", "DBPM", "OBPM", "DWS", "OWS", "TRB%", "PER"};
@@ -31,15 +35,17 @@ public class Scraper {
     private static final String[] onOffIgnorees = {"OoNtRtg", "OoNtPace", "OoNtTOV%", "OoNtEFG%", "OoNtBLK%", "OoNtSTL%",
             "OoNtAST%", "OoNtTRB%", "OoNtDRB%", "OoNtORB%", "OoNtEFG%", "OoOpBLK%", "OoOpSTL%", "OoOpAST%", "OoOpTRB%",
             "OoOpDRB%", "OoOpORB%", "OoOpPace", "OoTRB%", "OoTmBLK%", "OoTmSTL%", "OoTmAST%", "OoTmPace"};
-    private static final String[] topTeamTableIgnorees = {"STL", "TRB", "DRB", "ORB"};
+    private static final String[] topTeamTableIgnorees = {"STL", "TRB", "DRB", "ORB", "FTr"};
     private static final String[] bottomTeamTableIgnorees = {};
+    private static final String[] teamRepeats = {"eFG%", "TOV%", "FT/FGA"};
+    private static final String[] teamRenames = {"OppeFG%", "OppTOV%", "OppFT/FGA"};
     //</editor-fold>
 
     // Want the averages of allYears to be a global variable, and it is static as there's only one overarching average file.
     private static SeasonList allYears;
 
     public static void main(String[] args) throws Exception {
-//        allYears = SeasonList.seasonFromFile("years.csv");
+//        allYears = SeasonList.readSeasonList("years.csv");
 //        allYears.saveFile("parsed");
         parseSeason("GSW", 2016);
 //        parseSeason("CLE", 2009);
@@ -52,6 +58,7 @@ public class Scraper {
     private static void parseSeason(String team, int year) throws Exception {
         TeamSeason parsedInfo = new TeamSeason(team, year);
         readSeasonLink(parsedInfo);
+        parsedInfo.printAllInfo();
 //        readOnOffLink(parsedInfo);
 //        parsedInfo.addAdjustments();
 //        parsedInfo.saveFile();
@@ -77,8 +84,8 @@ public class Scraper {
         String[] allFactorsTable = allFactors.childNode(allFactors.childNodeSize() - 2).outerHtml().split("[\\r\\n]+");
         Node moreFactors = blob.selectFirst("div#all_team_misc");
         String[] moreFactorsTable = moreFactors.childNode(moreFactors.childNodeSize() - 2).outerHtml().split("[\\r\\n]+");
-//        addRows(szn, tableRows(blob, "div#all_advanced"), advancedCols);
-//        szn.deleteCols(advancedIgnorees);
+        addRows(szn, tableRows(blob, "div#all_advanced"), advancedCols);
+        szn.deleteCols(advancedIgnorees);
         // TODO: Add back in once missing col issue is fixed (i.e. no 3pt%)
         // addRows(szn, tableRows(blob, "div#all_per_poss"), per100Cols);
         // szn.deleteCols(per100Ignorees);
@@ -219,11 +226,10 @@ public class Scraper {
         return tbodySeasons(blob.childNode(blob.childNodeSize() - 2).outerHtml().split("[\\r\\n]+"));
     }
 
-    // Takes the selected top and bottom rows from their comment blobs, parses them, and adds it
-    // to the TeamSeasons teamCols and teamVals.
+    // Takes the selected top and bottom rows from their comment blobs, parses them, and adds it to the team season.
     private static void addTeamInfo(TeamSeason szn, String[] topRows, String[] bottomRows) {
-        int firstUsedRow = searchFromFront("<tr>", topRows) + 4;
-        int numRows = searchFromEnd("  </tr>", topRows) - firstUsedRow - 3;
+        int firstUsedRow = searchFromFront("<tr>", topRows) + 3;
+        int numRows = searchFromEnd("  </tr>", topRows) - firstUsedRow - 2;
         String[] topLabelRows = new String[numRows];
         System.arraycopy(topRows, firstUsedRow, topLabelRows, 0, numRows);
         firstUsedRow = searchFromFront("<tr>", bottomRows) + 8;
@@ -242,15 +248,19 @@ public class Scraper {
         String topTeamVal = topRows[searchFromEnd("Team/G", topRows)];
         String bottomTeamVal = bottomRows[searchFromFront("<tr >", bottomRows)];
         String[] topSplitArr = String.join("  ", topTeamVal.split("<.*?>")).split("  +");
-        String[] topRelevantArr = new String[topSplitArr.length - 5];
-        System.arraycopy(topSplitArr, 3, topRelevantArr, 0, topRelevantArr.length);
+        double[] topRelevantArr = new double[topSplitArr.length - 4];
+        for (int i = 0; i < topRelevantArr.length; i++) {
+            topRelevantArr[i] = Double.parseDouble(topSplitArr[i+2]);
+        }
         String[] bottomSplitArr = String.join("  ", bottomTeamVal.split("<.*?>")).split("  +");
-        String[] bottomRelevantArr = new String[bottomSplitArr.length - 10];
-        System.arraycopy(bottomSplitArr, 8, bottomRelevantArr, 0, bottomRelevantArr.length);
+        double[] bottomRelevantArr = new double[bottomSplitArr.length - 10];
+        for (int i = 0; i < bottomRelevantArr.length; i++) {
+            bottomRelevantArr[i] = Double.parseDouble(bottomSplitArr[i+8]);
+        }
 
-        System.out.println(String.join(" ", topRelevantArr));
-        System.out.println(String.join(" ", topLabels));
-        System.out.println(String.join(" ", bottomRelevantArr));
-        System.out.println(String.join(" ", bottomLabels));
+        szn.addTeamAttributes(topLabels, topRelevantArr);
+        szn.addTeamAttributes(bottomLabels, bottomRelevantArr);
+        szn.deleteTeamCols(topTeamTableIgnorees);
+        szn.renameTeamCols(teamRepeats, teamRenames);
     }
 }
