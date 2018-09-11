@@ -35,38 +35,36 @@ public class Scraper {
         "OoOpDRB%", "OoOpORB%", "OoOpPace", "OoTRB%", "OoTmBLK%", "OoTmSTL%", "OoTmAST%", "OoTmPace"};
     private static final String[] topTeamTableIgnorees = {"STL", "TRB", "DRB", "ORB"};
     private static final String[] bottomTeamTableIgnorees = {"FTr"};
-    private static final String[] teamRepeats = {"eFG%", "TOV%", "FT/FGA"};
-    private static final String[] teamRenames = {"OppeFG%", "OppTOV%", "OppFT/FG"};
+    private static final String[] teamRepeats = {"eFG%", "TOV%", "FT/FGA", "FT/FGA"};
+    private static final String[] teamRenames = {"OppeFG%", "OppTOV%", "OppFT/FG", "FT/FG"};
     //</editor-fold>
 
     // Want the averages of allYears to be a global variable, and it is static as there's only one overarching average file.
     private static SeasonList allYears;
 
     public static void main(String[] args) throws Exception {
-        allYears = SeasonList.readSeasonList("years.csv");
-//        allYears.saveFile("parsed");
+        allYears = SeasonList.readSeasonList("allyears.csv");
         parseSeason("GSW", 2016);
-//        parseSeason("CLE", 2009);
-//        parseSeason("LAL", 2009);
-//        parseSeason("DET", 2004);
-//        parseSeason("OKC", 2018);
-//        parseSeason("BOS", 2018);
+        parseSeason("CLE", 2009);
+        parseSeason("LAL", 2009);
+        parseSeason("DET", 2004);
+        parseSeason("OKC", 2018);
+        parseSeason("BOS", 2018);
     }
 
     private static void parseSeason(String team, int year) throws Exception {
         TeamSeason parsedInfo = new TeamSeason(team, year);
         readSeasonLink(parsedInfo);
-        parsedInfo.printAllInfo();
-//        readOnOffLink(parsedInfo);
-//        parsedInfo.addAdjustments();
-//        parsedInfo.saveFile();
+        readOnOffLink(parsedInfo);
+        parsedInfo.addAdjustments();
+//        parsedInfo.printAllInfo();
+        parsedInfo.saveFile();
     }
 
     private static void readOnOffLink(TeamSeason szn) throws Exception {
         // First find the url and table we want. Find the real content of the table with our helper.
         // Then call our add rows helper to add the rows and remove the ones we don't want.
-        String ofOffLink = String.format("%s%s/%s/on-off", baseTeamUrl, szn.team, szn.year);
-        Document statsDoc = Jsoup.connect(ofOffLink).get();
+        Document statsDoc = Jsoup.connect(szn.url("/on-off")).get();
         Node blob = statsDoc.selectFirst("[role=main]").selectFirst("div#all_on_off");
         addOnOffRows(szn, trSeasons(blob.childNode(blob.childNodeSize() - 2).outerHtml().split("[\\r\\n]+")));
         szn.deleteCols(onOffIgnorees);
@@ -75,8 +73,7 @@ public class Scraper {
     private static void readSeasonLink(TeamSeason szn) throws Exception {
         // First find the url and table we want. Find the real content of the table(s) with our helper.
         // Then call our add rows helper to add the rows and remove the ones we don't want.
-        String seasonLink = String.format("%s%s/%s.html", baseTeamUrl, szn.team, szn.year);
-        Document statsDoc = Jsoup.connect(seasonLink).get();
+        Document statsDoc = Jsoup.connect(szn.url(".html")).get();
         Element blob = statsDoc.selectFirst("[role=main]");
         Node allFactors = blob.selectFirst("div#all_team_and_opponent");
         String[] allFactorsTable = allFactors.childNode(allFactors.childNodeSize() - 2).outerHtml().split("[\\r\\n]+");
