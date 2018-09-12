@@ -82,7 +82,7 @@ public class TeamSeason {
         output.append(fileValue).flush();
         output.close();
         if (teamCols.size() > 0) {
-            FileWriter teamOutput = new FileWriter("relativeOutput/" + team + year + "rel.csv");
+            FileWriter teamOutput = new FileWriter("relativeOutput/" + team + year + ".csv");
             StringBuilder teamValue = new StringBuilder();
             teamValue.append(String.join(",", teamCols)).append("\n");
             for (double stat : teamStats)
@@ -199,14 +199,14 @@ public class TeamSeason {
     }
 
     // Takes a column and divides each value by sqrt(stddev) to semi adjust gaps that are too large.
-    // TODO: Figure out how to do this properly!
     private void semiNormalize(int colPos) {
         int weightPos = playerCols.indexOf("%MP");
         double stdDev = 0;
         for (ArrayList<Double> player : playerSeasons.values())
             stdDev += player.get(colPos) * player.get(colPos) * player.get(weightPos);
+        stdDev = Math.pow(stdDev/500, 0.25);
         for (ArrayList<Double> player : playerSeasons.values())
-            player.set(colPos, Math.floor(10000 * player.get(colPos) / Math.sqrt(stdDev)) / 10000);
+            player.set(colPos, Math.floor(10000 * player.get(colPos) / stdDev) / 10000);
     }
 
     // Adds column based on the other adjustment methods and add a new column for the sum of them.
