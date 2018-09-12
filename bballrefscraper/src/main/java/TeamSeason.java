@@ -206,7 +206,7 @@ public class TeamSeason {
             stdDev += player.get(colPos) * player.get(colPos) * player.get(weightPos);
         stdDev = Math.pow(stdDev/500, 0.25);
         for (ArrayList<Double> player : playerSeasons.values())
-            player.set(colPos, Math.floor(10000 * player.get(colPos) / stdDev) / 10000);
+            player.set(colPos, Math.floor(1000 * player.get(colPos) / stdDev) / 10000);
     }
 
     // Adds column based on the other adjustment methods and add a new column for the sum of them.
@@ -251,6 +251,17 @@ public class TeamSeason {
         normalize(playerCols.size());
         semiNormalize(playerCols.size());
         playerCols.add("OoAdj");
+        normalize(playerCols.size());
+        playerCols.add("MinAdj");
+    }
+
+    // For pre +- seasons, just add minAdj
+    public void addMinAdj() {
+        int minutesI = playerCols.indexOf("MP"), gamesI = playerCols.indexOf("G");
+        for (List<Double> row : playerSeasons.values()) {
+            double GP = row.get(gamesI), MP = row.get(minutesI);
+            row.add(minAdjCoeff * (0.5 * Math.log(GP) + Math.log(Math.max(MP / GP - 5, 1)) + Math.sqrt((30 + MP) / (GP + 2))));
+        }
         normalize(playerCols.size());
         playerCols.add("MinAdj");
     }

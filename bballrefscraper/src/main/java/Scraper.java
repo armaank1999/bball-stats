@@ -56,11 +56,13 @@ public class Scraper {
         if (year > 2000) {
             readOnOffLink(parsedInfo);
             parsedInfo.addAdjustments();
-        }
+        } else
+            parsedInfo.addMinAdj();
         parsedInfo.printAllInfo();
 //        parsedInfo.saveFile();
     }
 
+    // Functions that read the relevant link with JSoup, then find the right info, parse it, and add to the TeamSeason.
     private static void readOnOffLink(TeamSeason szn) throws Exception {
         // First find the url and table we want. Find the real content of the table with our helper.
         // Then call our add rows helper to add the rows and remove the ones we don't want.
