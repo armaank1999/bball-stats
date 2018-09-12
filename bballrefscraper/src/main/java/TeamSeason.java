@@ -21,6 +21,8 @@ public class TeamSeason {
     private final Map<String, ArrayList<Double>> playerSeasons = new LinkedHashMap<>();
     private final List<String> teamCols = new ArrayList<>();
     private final List<Double> teamStats = new ArrayList<>();
+    private final List<String> oppCols = new ArrayList<>();
+    private final List<Double> oppStats = new ArrayList<>();
 
     public TeamSeason(String t, int y) {
         year = y;
@@ -38,6 +40,13 @@ public class TeamSeason {
             System.out.printf("%-9s", colName);
         System.out.println();
         for (Double val : teamStats)
+            System.out.printf("%-9s", val);
+        System.out.println();
+        System.out.println("Opp Stats:  ");
+        for (String colName : oppCols)
+            System.out.printf("%-9s", colName);
+        System.out.println();
+        for (Double val : oppStats)
             System.out.printf("%-9s", val);
         System.out.println();
         System.out.print("Name                       ");
@@ -99,6 +108,12 @@ public class TeamSeason {
             teamStats.add(val);
     }
 
+    public void addOppAttributes(String[] newColNames, double[] vals) {
+        oppCols.addAll(Arrays.asList(newColNames));
+        for (double val : vals)
+            oppStats.add(val);
+    }
+
     public void renameTeamCols(String[] originals, String[] news) {
         for (int i = 0; i < originals.length; i++)
             teamCols.set(teamCols.lastIndexOf(originals[i]), news[i]);
@@ -117,6 +132,13 @@ public class TeamSeason {
         return returnee;
     }
 
+    private int[] getOppCols(String[] names) {
+        int[] returnee = new int[names.length];
+        for (int i = 0; i < names.length; i++)
+            returnee[i] = oppCols.indexOf(names[i]);
+        return returnee;
+    }
+
     public void deleteCols(String[] cols) {
         for (String name : cols)
             deleteCol(name);
@@ -125,6 +147,11 @@ public class TeamSeason {
     public void deleteTeamCols(String[] cols) {
         for (String name : cols)
             deleteTeamCol(name);
+    }
+
+    public void deleteOppCols(String[] cols) {
+        for (String name : cols)
+            deleteOppCol(name);
     }
 
     public void deleteBlankCols() {
@@ -150,6 +177,14 @@ public class TeamSeason {
         }
     }
 
+    private void deleteOppCol(String colName) {
+        int index = oppCols.lastIndexOf(colName);
+        if (index != -1) {
+            oppCols.remove(index);
+            oppStats.remove(index);
+        }
+    }
+
     // Takes a column and adjusts each value so that the weighted sum is 0, then round to 4 decimal places.
     private void normalize(int colPos) {
         double total = 0, minutes = 0;
@@ -164,6 +199,7 @@ public class TeamSeason {
     }
 
     // Takes a column and divides each value by sqrt(stddev) to semi adjust gaps that are too large.
+    // TODO: Figure out how to do this properly!
     private void semiNormalize(int colPos) {
         int weightPos = playerCols.indexOf("%MP");
         double stdDev = 0;
@@ -251,7 +287,8 @@ public class TeamSeason {
     public void per100ize() {
         int minutesI = teamCols.indexOf("MP"), paceI = teamCols.indexOf("Pace");
         double adjustmentFactor = 24000.0 / (teamStats.get(minutesI) * teamStats.get(paceI));
-        int[] positions = getTeamCols(new String[]{"FG", "FGA", "3P", "3PA", "2P", "2PA", "FT", "FTA", "AST", "BLK", "TOV"});
+        String[] attributes = {"FG", "FGA", "3P", "3PA", "2P", "2PA", "FT", "FTA", "AST", "BLK", "TOV"};
+        int[] positions = getTeamCols(attributes);
         for (int position : positions)
             teamStats.set(position, Math.floor(100 * teamStats.get(position) * adjustmentFactor) / 100);
         teamCols.add("TS%");
@@ -259,6 +296,14 @@ public class TeamSeason {
             teamStats.get(positions[6])) / (teamStats.get(positions[1]) + 0.44 * teamStats.get(positions[7])))) / 10000);
         teamCols.add("AST%");
         teamStats.add(Math.floor(10000 * teamStats.get(positions[8]) / teamStats.get(positions[0])) / 10000);
+        int[] oppPositions = getOppCols(attributes);
+        for (int position : oppPositions)
+            oppStats.set(position, Math.floor(100 * oppStats.get(position) * adjustmentFactor) / 100);
+        oppCols.add("TS%");
+        oppStats.add(Math.floor(5000 * ((3 * oppStats.get(positions[2]) + 2 * oppStats.get(positions[4]) +
+            oppStats.get(positions[6])) / (oppStats.get(positions[1]) + 0.44 * oppStats.get(positions[7])))) / 10000);
+        oppCols.add("AST%");
+        oppStats.add(Math.floor(10000 * oppStats.get(positions[8]) / oppStats.get(positions[0])) / 10000);
     }
 
 //    Old potential formula from past project

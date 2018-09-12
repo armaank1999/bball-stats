@@ -43,7 +43,7 @@ public class Scraper {
         allYears = SeasonList.readSeasonList("allyears.csv");
         parseSeason("GSW", 2016);
 //        parseSeason("CLE", 2009);
-        parseSeason("DET", 2004);
+//        parseSeason("DET", 2004);
 //        parseSeason("OKC", 2018);
 //        parseSeason("LAL", 2009);
 //        parseSeason("BOS", 2018);
@@ -57,8 +57,8 @@ public class Scraper {
             readOnOffLink(parsedInfo);
             parsedInfo.addAdjustments();
         }
-//        parsedInfo.printAllInfo();
-        parsedInfo.saveFile();
+        parsedInfo.printAllInfo();
+//        parsedInfo.saveFile();
     }
 
     private static void readOnOffLink(TeamSeason szn) throws Exception {
@@ -200,6 +200,7 @@ public class Scraper {
         int numRows = searchFromEnd("  </tr>", topRows) - firstUsedRow - 2;
         String[] topLabelRows = new String[numRows];
         System.arraycopy(topRows, firstUsedRow, topLabelRows, 0, numRows);
+
         firstUsedRow = searchFromFront("<tr>", bottomRows) + 8;
         numRows = searchFromEnd("  </tr>", bottomRows) - firstUsedRow - 2;
         String[] bottomLabelRows = new String[numRows];
@@ -212,18 +213,25 @@ public class Scraper {
             bottomLabels[i] = bottomLabelRows[i].split("<*+ >")[1].split("<")[0];
 
         String topTeamVal = topRows[searchFromEnd("Team/G", topRows)];
+        String topOppVal = topRows[searchFromEnd("Opponent/G", topRows)];
         String bottomTeamVal = bottomRows[searchFromFront("<tr >", bottomRows)];
         String[] topSplitArr = String.join("  ", topTeamVal.split("<.*?>")).split("  +");
         double[] topRelevantArr = new double[topSplitArr.length - 4];
         for (int i = 0; i < topRelevantArr.length; i++)
             topRelevantArr[i] = Double.parseDouble(topSplitArr[i+2]);
+        String[] oppSplitArr = String.join("  ", topOppVal.split("<.*?>")).split("  +");
+        double[] oppRelevantArr = new double[oppSplitArr.length - 4];
+        for (int i = 0; i < oppRelevantArr.length; i++)
+            oppRelevantArr[i] = Double.parseDouble(oppSplitArr[i+2]);
         String[] bottomSplitArr = String.join("  ", bottomTeamVal.split("<.*?>")).split("  +");
         double[] bottomRelevantArr = new double[bottomSplitArr.length - 10];
         for (int i = 0; i < bottomRelevantArr.length; i++)
             bottomRelevantArr[i] = Double.parseDouble(bottomSplitArr[i+8]);
 
         szn.addTeamAttributes(topLabels, topRelevantArr);
+        szn.addOppAttributes(topLabels, oppRelevantArr);
         szn.deleteTeamCols(topTeamTableIgnorees);
+        szn.deleteOppCols(topTeamTableIgnorees);
         szn.addTeamAttributes(bottomLabels, bottomRelevantArr);
         szn.deleteTeamCols(bottomTeamTableIgnorees);
         szn.renameTeamCols(teamRepeats, teamRenames);
