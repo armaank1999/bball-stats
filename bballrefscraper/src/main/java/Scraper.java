@@ -18,7 +18,6 @@ public class Scraper {
         "AST%", "STL%", "BLK%", "TOV%", "USG%", "OWS", "DWS", "WS", "WS/48"};
     private static final String[] per100Cols = {"Age", "G", "GS", "MP", "FG", "FGA", "FG%", "3P", "3PA", "3P%", "2P", "2PA", "2P%",
         "FT", "FTA", "FT%", "ORB", "DRB", "TRB", "AST", "STL", "BLK", "TOV", "PF", "PTS", "ORtg", "DRtg"};
-    // Only apply for post 2000 seasons.
     private static final String[] onOffCols = {"%MP", "OoTmEFG%", "OoORB%", "OoDRB%", "OoTRB%", "OoTmAST%", "OoTmSTL%",
         "OoTmBLK%", "OoTmTOV%", "OoTmPace", "OoORtg", "OoOpEFG%", "OoOpORB%", "OoOpDRB%", "OoOpTRB%", "OoOpAST%", "OoOpSTL%",
         "OoOpBLK%", "OoOpTOV%", "OoOpPace", "OoDRtg", "OoNtEFG%", "OoNtORB%", "OoNtDRB%", "OoNtTRB%", "OoNtAST%", "OoNtSTL%",
@@ -89,7 +88,7 @@ public class Scraper {
         addTeamInfo(szn, parseComment(blob.selectFirst("div#all_team_and_opponent")), parseComment(blob.selectFirst("div#all_team_misc")));
         addRows(szn, tableRows(blob, "div#all_advanced"), advancedCols);
         szn.deleteCols(advancedIgnorees);
-        // TODO: Add back in once missing col issue is fixed (i.e. no 3pt% leaves a blank value)
+        // TODO: Add back in once missing col issue is fixed (i.e. no 3pt% leaves a blank value). Try moving away from add spaces if possible.
         // addRows(szn, tableRows(blob, "div#all_per_poss"), per100Cols);
         // szn.deleteCols(per100Ignorees);
     }
@@ -114,8 +113,6 @@ public class Scraper {
         String[] names = new String[years.length];
         double[][] table = new double[years.length][];
         for (int i = 0; i < years.length; i++) {
-            // TODO: figure out a way to avoid this method of adding spaces and then calling relevantChildren
-            // as that messes up when cols are actually empty (e.g. Ben Wallace 3p%)
             Element row = Jsoup.parse(addSpaces(years[i]));
             String[] colVals = relevantChildren(row.outerHtml().split("<body>\n  ")[1].split("\n </body>")[0]);
             String name = colVals[0];

@@ -76,7 +76,7 @@ public class TeamSeason {
     }
 
     public void saveFile() throws Exception {
-        FileWriter output = new FileWriter("teamOutput/" + team + year + ".csv");
+        FileWriter output = new FileWriter("playerOutput/" + team + year + ".csv");
         StringBuilder fileValue = new StringBuilder("Name,");
         fileValue.append(String.join(",", playerCols)).append("\n").append(String.join("\n", rowCSVs()));
         output.append(fileValue).flush();
@@ -185,7 +185,8 @@ public class TeamSeason {
         }
     }
 
-    // Takes a column and adjusts each value so that the weighted sum is 0, then round to 4 decimal places.
+    // Takes a column and adjusts each value so that the weighted sum is 0, then round to 4 decimal places. Necessary so the
+    // total sum of AdjWS = total sum WS = team expected wins.
     private void normalize(int colPos) {
         double total = 0, minutes = 0;
         int weightI = playerCols.indexOf("MP");
@@ -210,49 +211,37 @@ public class TeamSeason {
     }
 
     // Adds column based on the other adjustment methods and add a new column for the sum of them.
-    public void addAdjustments() {
-        addReboundingAdjustment();
-        addOnOffAdjustments();
-        playerCols.add("AdjWS/48");
-        int wsI = playerCols.indexOf("WS/48"), rbI = playerCols.indexOf("RBAdj"),
-            ooI = playerCols.indexOf("OoAdj"), minI = playerCols.indexOf("MinAdj");
-        for (List<Double> row : playerSeasons.values())
-            row.add((double) Math.round((row.get(wsI) + row.get(rbI) + row.get(ooI) + row.get(minI)) * 10000) / 10000);
-    }
-
-    // Subtract a multiple of individual ORB/DRB% and add in the on-off effect that player has on
+    // RBAdj: Subtract a multiple of individual ORB/DRB% and add in the on-off effect that player has on
     // the team rebounding wise to gauge actual impact/punish stat-padding, then normalize the column.
-    // Also pretty universally hurts centers, but I feel that advanced stats in general overhype them
-    // Javale, David West, Zaza WS/48 are way higher than Klay's, so keeping this feature
-    private void addReboundingAdjustment() {
-        int percentI = playerCols.indexOf("%MP"), gamesI = playerCols.indexOf("G"), orbI = playerCols.indexOf("ORB%"),
-            drbI = playerCols.indexOf("DRB%"), netORBI = playerCols.indexOf("OoORB%"), netDRBI = playerCols.indexOf("OoDRB%");
-        // Subtract a multiple of ORB% and DRB%. Number should be somewhere between 0.5 and 1. Then add in net effect.
-        for (List<Double> row : playerSeasons.values())
-            row.add((row.get(netORBI) + row.get(netDRBI) - 0.75 * row.get(orbI) - 0.75 * row.get(drbI)) *
-                (rebCoeff * Math.sqrt(row.get(gamesI)) * row.get(percentI) * (100 - row.get(percentI)) / 22500));
-        normalize(playerCols.size());
-        playerCols.add("RBAdj");
-    }
-
-    // Add/subtract points based on how much better the team/opponent's offensive ratings are. Weigh defensive impact more
+    // OOAdj: Add/subtract points based on how much better the team/opponent's offensive ratings are. Weigh defensive impact more
     // as that is less captured by the other baseline advanced stats - number should be between 1 and 2.
-    // Give points based on total games played minutes per game as clearly players who play more MPG are better
-    // but WS/48 ignores that. Weight on off change based on sqrt games and %MP * (1 - %MP) - stddev for binomial.
-    private void addOnOffAdjustments() {
+    // MinAdj: Give points based on total games played minutes per game as clearly players who play more MPG are better
+    // but WS/48 ignores that. Weight other changes based on sqrt games and %MP * (1 - %MP) - stddev for binomial.
+    public void addAdjustments() {
         int minutesI = playerCols.indexOf("MP"), percentI = playerCols.indexOf("%MP"), gamesI = playerCols.indexOf("G"),
-            offOOI = playerCols.indexOf("OoORtg"), defOOI = playerCols.indexOf("OoDRtg");
+            offOOI = playerCols.indexOf("OoORtg"), defOOI = playerCols.indexOf("OoDRtg"), orbI = playerCols.indexOf("ORB%"),
+            drbI = playerCols.indexOf("DRB%"), netORBI = playerCols.indexOf("OoORB%"), netDRBI = playerCols.indexOf("OoDRB%");
         for (List<Double> row : playerSeasons.values()) {
-            double GP = row.get(gamesI), MP = row.get(minutesI);
-            row.add((row.get(offOOI) - 1.5 * row.get(defOOI)) *
-                (onOffCoeff * Math.sqrt(GP) * row.get(percentI) * (100 - row.get(percentI)) / 22500));
+            double GP = row.get(gamesI), MP = row.get(minutesI), P = row.get(percentI);
+            double weight = Math.sqrt(GP) * P * (100 - P) / 22500;
+            row.add((row.get(offOOI) - 1.5 * row.get(defOOI)) * onOffCoeff * weight);
             row.add(minAdjCoeff * (0.5 * Math.log(GP) + Math.log(Math.max(MP / GP - 5, 1)) + Math.sqrt((30 + MP) / (GP + 2))));
+            row.add((row.get(netORBI) + row.get(netDRBI) - 0.75 * row.get(orbI) - 0.75 * row.get(drbI)) * rebCoeff * weight);
         }
         normalize(playerCols.size());
         semiNormalize(playerCols.size());
         playerCols.add("OoAdj");
         normalize(playerCols.size());
         playerCols.add("MinAdj");
+        normalize(playerCols.size());
+        playerCols.add("RBAdj");
+        int wsI = playerCols.indexOf("WS/48"), rbI = playerCols.indexOf("RBAdj"), ooI = playerCols.indexOf("OoAdj"), minI = playerCols.indexOf("MinAdj");
+        for (List<Double> row : playerSeasons.values()) {
+            row.add((double) Math.round((row.get(wsI) + row.get(rbI) + row.get(ooI) + row.get(minI)) * 10000) / 10000);
+            row.add((double) Math.round(row.get(playerCols.size()) * row.get(minutesI) * 1000 / 48) / 1000);
+        }
+        playerCols.add("AdjWS/48");
+        playerCols.add("AdjWS");
     }
 
     // For pre +- seasons, just add minAdj
@@ -266,6 +255,8 @@ public class TeamSeason {
         playerCols.add("MinAdj");
     }
 
+    // Compares the team's stats to the league average of that season to account for era changes. Which defense is actually the best
+    // given the era, not just which is in an era of handcheck?
     public void addRelativeInfo(SeasonList averages) {
         List<Double> comparee = averages.getYear(year);
         String[] names = {"Pace", "ORtg", "3P%", "2P%", "FT%", "ORB%", "DRB%", "AST%", "TS%", "eFG%", "FT/FG", "3PAr", "TOV%"};
@@ -274,12 +265,17 @@ public class TeamSeason {
         // Net multiply by a 100 to convert to a percent. IE a RelORTG of 10 means they were 10% better than the average
         // that year, which would be the greatest number of all time. 2016 GSW is 7.61, the record is 04 DAL at 8.94
         // (they had great offensive rebounders and shooters with Dirk at Center and glass crashers from the 2-4 and Nash at PG).
-        // This is because 04 was the toughest year to score in post 3pt line besides 99, which was a lockout.
+        // This is because 04 was the toughest year to score post 3pt line besides 99 == lockout. 2016 spurs were a top 15 defense of all time.
+        // Question: for DRB how do we treat relative? Because rn a 5% rel DRB is way tougher than a 5% rel ORB.
+        // Probably change to -relOppORB, so then both are on the same scale and a team with a 10 relORB and -10 relDRB will be
+        // a net neutral rebounding% team.
         for (int i = 0; i < names.length; i++) {
             teamCols.add("Rel" + names[i]);
             teamStats.add(Math.floor(10000 * (teamStats.get(ourPositions[i])/comparee.get(compareePositions[i]) - 1)) / 100);
         }
         // Make TOV% negative as lower is better, will do this with all the opponents stats too, as lower opponent efficiency is better.
+        // Question: should this be -(team/comparee - 1) or comparee/team - 1? The bleacher report article uses the latter for best defenses
+        // of all time (https://bleacherreport.com/articles/2185159-ranking-the-nbas-20-best-defenses-of-all-time)
         teamStats.set(teamStats.size() - 1, -teamStats.get(teamStats.size() - 1));
         String[] moreCols = {"DRtg", "OppeFG%", "OppFT/FG", "OppTOV%"};
         String[] moreColEquivalents = {"ORtg", "eFG%", "FT/FG", "TOV%"};
@@ -292,12 +288,13 @@ public class TeamSeason {
         }
         // Same as above with TOV%
         teamStats.set(teamStats.size() - 1, -teamStats.get(teamStats.size() - 1));
+        // Add in oppCols now that we get the third row of the table too.
+
     }
 
     // Adjust all the stats to per 100 poss, and also add in TS%.
     public void per100ize() {
-        int minutesI = teamCols.indexOf("MP"), paceI = teamCols.indexOf("Pace");
-        double adjustmentFactor = 24000.0 / (teamStats.get(minutesI) * teamStats.get(paceI));
+        double adjustmentFactor = 24000.0 / (teamStats.get(teamCols.indexOf("MP")) * teamStats.get(teamCols.indexOf("Pace")));
         String[] attributes = {"FG", "FGA", "3P", "3PA", "2P", "2PA", "FT", "FTA", "AST", "BLK", "TOV"};
         int[] positions = getTeamCols(attributes);
         for (int position : positions)

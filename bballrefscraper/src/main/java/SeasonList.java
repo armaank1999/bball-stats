@@ -14,6 +14,8 @@ public class SeasonList {
         firstSeason = (int) fS;
     }
 
+    // Reads from the local csv file, which is from https://www.basketball-reference.com/leagues/NBA_stats.html but has many columns - TS%, etc - added.
+    // The local excel file has that stuff and more, but this is only objective stuff - there I have graphs and subjective (but supported) analysis
     public static SeasonList readSeasonList(String fileName) throws Exception {
         BufferedReader br = new BufferedReader(new FileReader(fileName));
         // Read first lines outside of loop to get firstSeason and colNames
