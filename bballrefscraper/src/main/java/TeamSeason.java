@@ -184,7 +184,7 @@ public class TeamSeason {
 
     // Deletes players who have too few cols, stopgap until we can 0 fill them.
     private void deleteBuggers() {
-        int len = playerSeasons.values().iterator().next().size();
+        int len = playerCols.size();
         List<String> incompletes = new ArrayList<>();
         for (String name : playerSeasons.keySet())
             if (playerSeasons.get(name).size() < len)

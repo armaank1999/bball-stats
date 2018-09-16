@@ -16,6 +16,8 @@ public class Scraper {
         {"ATL", "BOS", "BRK", "CHA", "CHI", "CLE", "DAL", "DEN", "DET", "GSW", "HOU", "IND", "LAC", "LAL", "MEM", "MIA",
             "MIL", "MIN", "NOP", "NYK", "OKC", "ORL", "PHI", "PHO", "POR", "SAC", "SAS", "TOR", "UTA", "WAS"},
         {"ATL", "BOS", "BRK", "CHA", "CHI", "CLE", "DAL", "DEN", "DET", "GSW", "HOU", "IND", "LAC", "LAL", "MEM", "MIA",
+            "MIL", "MIN", "NOH", "NYK", "OKC", "ORL", "PHI", "PHO", "POR", "SAC", "SAS", "TOR", "UTA", "WAS"},
+        {"ATL", "BOS", "NJN", "CHA", "CHI", "CLE", "DAL", "DEN", "DET", "GSW", "HOU", "IND", "LAC", "LAL", "MEM", "MIA",
             "MIL", "MIN", "NOH", "NYK", "OKC", "ORL", "PHI", "PHO", "POR", "SAC", "SAS", "TOR", "UTA", "WAS"}};
     // First is 1980 to present, No 3PAr in 78 and 79, No TOV or USG from 74-77, No O/DRB, STL/BLK, BPM from 71 to 73,
     // No TRB 65 - 70, 1952 - 1964 no AST. Pre 1952 doesn't even have minutes played so not bothering
@@ -74,7 +76,7 @@ public class Scraper {
 
     public static void main(String[] args) throws Exception {
         allYears = SeasonList.readSeasonList("allyears.csv");
-        parseSeasons(2018);
+        parseSeasons(2008);
 //        parseSeason("CHI", 1996);
         parseSeason("GSW", 2016);
         parseSeason("CLE", 2009);
@@ -311,7 +313,8 @@ public class Scraper {
         if (year > 2018) return null;
         if (year > 2014) return teamNames[0];
         if (year > 2013) return teamNames[1];
-        if (year > 2007) return teamNames[2];
+        if (year > 2012) return teamNames[2];
+        if (year > 2007) return teamNames[3];
         return null;
     }
 }
