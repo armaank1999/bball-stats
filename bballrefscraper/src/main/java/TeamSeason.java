@@ -78,13 +78,13 @@ public class TeamSeason {
     }
 
     public void saveFile() throws Exception {
-        FileWriter output = new FileWriter("playerOutput/" + team + year + ".csv");
+        FileWriter output = new FileWriter("playerOutput/" + year + team + ".csv");
         StringBuilder fileValue = new StringBuilder("Name,");
         fileValue.append(String.join(",", playerCols)).append("\n").append(String.join("\n", rowCSVs()));
         output.append(fileValue).flush();
         output.close();
         if (teamCols.size() > 0) {
-            FileWriter teamOutput = new FileWriter("relativeOutput/" + team + year + ".csv");
+            FileWriter teamOutput = new FileWriter("relativeOutput/" + year + team + ".csv");
             StringBuilder teamValue = new StringBuilder();
             teamValue.append(String.join(",", teamCols)).append("\n");
             for (double stat : teamStats)
@@ -183,7 +183,7 @@ public class TeamSeason {
     }
 
     // Deletes players who have too few cols, stopgap until we can 0 fill them.
-    public void deleteBuggers() {
+    private void deleteBuggers() {
         int len = playerSeasons.values().iterator().next().size();
         List<String> incompletes = new ArrayList<>();
         for (String name : playerSeasons.keySet())

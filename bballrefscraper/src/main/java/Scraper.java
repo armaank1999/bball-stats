@@ -76,13 +76,11 @@ public class Scraper {
         allYears = SeasonList.readSeasonList("allyears.csv");
         parseSeasons(2018);
 //        parseSeason("CHI", 1996);
-//        parseSeason("GSW", 2016);
-//        parseSeason("CLE", 2009);
-//        parseSeason("DET", 2004);
-//        parseSeason("OKC", 2018);
-//        parseSeason("LAL", 2009);
-//        parseSeason("BOS", 2018);
-//        parseSeason("SAS", 2016);
+        parseSeason("GSW", 2016);
+        parseSeason("CLE", 2009);
+        parseSeason("DET", 2004);
+        parseSeason("LAL", 2009);
+        parseSeason("SAS", 2016);
     }
 
     private static void parseSeasons(int year) throws Exception {
