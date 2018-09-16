@@ -9,6 +9,14 @@ import java.util.List;
 
 public class Scraper {
     //<editor-fold desc="Massive list of constants">
+    // List of valid teams by year.
+    private static final String[][] teamNames = {
+        {"ATL", "BOS", "BRK", "CHO", "CHI", "CLE", "DAL", "DEN", "DET", "GSW", "HOU", "IND", "LAC", "LAL", "MEM", "MIA",
+            "MIL", "MIN", "NOP", "NYK", "OKC", "ORL", "PHI", "PHO", "POR", "SAC", "SAS", "TOR", "UTA", "WAS"},
+        {"ATL", "BOS", "BRK", "CHA", "CHI", "CLE", "DAL", "DEN", "DET", "GSW", "HOU", "IND", "LAC", "LAL", "MEM", "MIA",
+            "MIL", "MIN", "NOP", "NYK", "OKC", "ORL", "PHI", "PHO", "POR", "SAC", "SAS", "TOR", "UTA", "WAS"},
+        {"ATL", "BOS", "BRK", "CHA", "CHI", "CLE", "DAL", "DEN", "DET", "GSW", "HOU", "IND", "LAC", "LAL", "MEM", "MIA",
+            "MIL", "MIN", "NOH", "NYK", "OKC", "ORL", "PHI", "PHO", "POR", "SAC", "SAS", "TOR", "UTA", "WAS"}};
     // First is 1980 to present, No 3PAr in 78 and 79, No TOV or USG from 74-77, No O/DRB, STL/BLK, BPM from 71 to 73,
     // No TRB 65 - 70, 1952 - 1964 no AST. Pre 1952 doesn't even have minutes played so not bothering
     private static final String[][] advancedCols = {
@@ -66,7 +74,9 @@ public class Scraper {
 
     public static void main(String[] args) throws Exception {
         allYears = SeasonList.readSeasonList("allyears.csv");
-        parseSeason("MNL", 1952);
+        parseSeasons(2018);
+//        parseSeason("CHI", 1996);
+//        parseSeason("GSW", 2016);
 //        parseSeason("CLE", 2009);
 //        parseSeason("DET", 2004);
 //        parseSeason("OKC", 2018);
@@ -75,13 +85,20 @@ public class Scraper {
 //        parseSeason("SAS", 2016);
     }
 
+    private static void parseSeasons(int year) throws Exception {
+        String[] teams = getTeams(year);
+        if (teams == null) return;
+        for (String team : teams) parseSeason(team, year);
+    }
+
     private static void parseSeason(String team, int year) throws Exception {
+        if (year > 2018) return;
         TeamSeason parsedInfo = new TeamSeason(team, year);
         readSeasonLink(parsedInfo);
         if (year > 2000) readOnOffLink(parsedInfo);
         else parsedInfo.addMinAdj();
-        parsedInfo.printAllInfo();
-//        parsedInfo.saveFile();
+//        parsedInfo.printAllInfo();
+        parsedInfo.saveFile();
     }
 
     // Functions that read the relevant link with JSoup, then find the right info, parse it, and add to the TeamSeason.
@@ -164,21 +181,14 @@ public class Scraper {
             List<String> allSplitRows = new ArrayList<>(Arrays.asList(rows[i + 2].split("<.*?>")));
             // Remove the blank columns that are in between the meaningful ones, and the first which is a pointless text tag.
             for (int j = allSplitRows.size() - 1; j >= 0; j--)
-                if (allSplitRows.get(j).equals(""))
-                    allSplitRows.remove(j);
+                if (allSplitRows.get(j).equals("")) allSplitRows.remove(j);
             allSplitRows.remove(0);
             String[] realValues = allSplitRows.toArray(new String[0]);
             double[] trulyParsedValues = new double[realValues.length];
             // the first one is represented as a percentage so ignore the percentage sign
             trulyParsedValues[0] = Double.parseDouble(realValues[0].substring(0, realValues[0].length() - 1));
-            // If it starts with a +, remove it, else keep the -
-            for (int k = 1; k < realValues.length; k++) {
-                String parsee = realValues[k];
-                if (parsee.startsWith("+"))
-                    trulyParsedValues[k] = Double.parseDouble(parsee.substring(1));
-                else
-                    trulyParsedValues[k] = Double.parseDouble(parsee);
-            }
+            for (int k = 1; k < realValues.length; k++)
+                trulyParsedValues[k] = Double.parseDouble(realValues[k]);
             colVals[i / 3] = trulyParsedValues;
         }
         szn.addPlayerStats(onOffCols, names, colVals);
@@ -226,8 +236,6 @@ public class Scraper {
     private static void addTeamInfo(TeamSeason szn, String[] topRows, String[] bottomRows) {
         String[] topLabels = getTopTeamCols(szn.year);
         if (topLabels == null) return;
-        String[] bottomLabels = getBottomTeamCols(szn.year);
-        if (bottomLabels == null) return;
 
         String topTeamVal = topRows[searchFromEnd("Team/G", topRows)];
         String[] topSplitArr = String.join("  ", topTeamVal.split("<.*?>")).split("  +");
@@ -248,6 +256,7 @@ public class Scraper {
             szn.deleteOppCols(topTeamTableIgnorees);
         }
 
+        String[] bottomLabels = getBottomTeamCols(szn.year);
         String bottomTeamVal = bottomRows[searchFromFront("<tr >", bottomRows)];
         String[] bottomSplitArr = String.join("  ", bottomTeamVal.split("<.*?>")).split("  +");
         double[] bottomRelevantArr = new double[bottomLabels.length];
@@ -297,6 +306,14 @@ public class Scraper {
         if (year > 1973) return bottomTeamCols[1];
         if (year > 1970) return bottomTeamCols[2];
         if (year > 1950) return bottomTeamCols[3];
+        return null;
+    }
+
+    private static String[] getTeams(int year) {
+        if (year > 2018) return null;
+        if (year > 2014) return teamNames[0];
+        if (year > 2013) return teamNames[1];
+        if (year > 2007) return teamNames[2];
         return null;
     }
 }

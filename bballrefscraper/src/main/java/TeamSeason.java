@@ -141,8 +141,8 @@ public class TeamSeason {
     }
 
     public void deleteCols(String[] cols) {
-        for (String name : cols)
-            deleteCol(name);
+        deleteBuggers();
+        for (String name : cols) deleteCol(name);
     }
 
     private boolean deleteCol(String colName) {
@@ -180,6 +180,17 @@ public class TeamSeason {
             oppCols.remove(index);
             oppStats.remove(index);
         }
+    }
+
+    // Deletes players who have too few cols, stopgap until we can 0 fill them.
+    public void deleteBuggers() {
+        int len = playerSeasons.values().iterator().next().size();
+        List<String> incompletes = new ArrayList<>();
+        for (String name : playerSeasons.keySet())
+            if (playerSeasons.get(name).size() < len)
+                incompletes.add(name);
+        for (String name : incompletes)
+            playerSeasons.remove(name);
     }
 
     // Takes a column and adjusts each value so that the weighted sum is 0, then round to 4 decimal places. Necessary so the
