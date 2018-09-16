@@ -9,19 +9,46 @@ import java.util.List;
 
 public class Scraper {
     //<editor-fold desc="Massive list of constants">
-    // A representation of the colNames of each respective table.
-    private static final String[] advancedCols = {"Age", "G", "MP", "PER", "TS%", "3PAr", "FTr", "ORB%", "DRB%", "TRB%",
-        "AST%", "STL%", "BLK%", "TOV%", "USG%", "OWS", "DWS", "WS", "WS/48", "OBPM", "DBPM", "BPM", "VORP"};
-    // Pre 1974 advanced stats (post then we get ORB/DRB and BPM). Pre 1964 no AST% (since there's no OFFICIAL pace stat
-    // even though estimate is there) either and pre 1952 no minutes, but ignoring the former for now and the latter forever.
-    private static final String[] advancedColsOld = {"Age", "G", "MP", "PER", "TS%", "3PAr", "FTr", "TRB%",
-        "AST%", "STL%", "BLK%", "TOV%", "USG%", "OWS", "DWS", "WS", "WS/48"};
-    private static final String[] per100Cols = {"Age", "G", "GS", "MP", "FG", "FGA", "FG%", "3P", "3PA", "3P%", "2P", "2PA", "2P%",
-        "FT", "FTA", "FT%", "ORB", "DRB", "TRB", "AST", "STL", "BLK", "TOV", "PF", "PTS", "ORtg", "DRtg"};
+    // First is 1980 to present, No 3PAr in 78 and 79, No TOV or USG from 74-77, No O/DRB, STL/BLK, BPM from 71 to 73,
+    // No TRB 65 - 70, 1952 - 1964 no AST. Pre 1952 doesn't even have minutes played so not bothering
+    private static final String[][] advancedCols = {
+        {"Age", "G", "MP", "PER", "TS%", "3PAr", "FTr", "ORB%", "DRB%", "TRB%", "AST%", "STL%",
+            "BLK%", "TOV%", "USG%", "OWS", "DWS", "WS", "WS/48", "OBPM", "DBPM", "BPM", "VORP"},
+        {"Age", "G", "MP", "PER", "TS%", "FTr", "ORB%", "DRB%", "TRB%", "AST%", "STL%",
+            "BLK%", "TOV%", "USG%", "OWS", "DWS", "WS", "WS/48", "OBPM", "DBPM", "BPM", "VORP"},
+        {"Age", "G", "MP", "PER", "TS%", "FTr", "ORB%", "DRB%", "TRB%", "AST%", "STL%",
+            "BLK%", "OWS", "DWS", "WS", "WS/48", "OBPM", "DBPM", "BPM", "VORP"},
+        {"Age", "G", "MP", "PER", "TS%", "FTr", "TRB%", "AST%", "OWS", "DWS", "WS", "WS/48"},
+        {"Age", "G", "MP", "PER", "TS%", "FTr", "AST%", "OWS", "DWS", "WS", "WS/48"},
+        {"Age", "G", "MP", "PER", "TS%", "FTr", "OWS", "DWS", "WS", "WS/48"}};
+    // First 1982 to present, no GS 80 and 81, no 3P 78 and 79, no TOV or ORTG 74 to 77, nothing before then.
+    private static final String[][] per100Cols = {
+        {"Age", "G", "GS", "MP", "FG", "FGA", "FG%", "3P", "3PA", "3P%", "2P", "2PA", "2P%", "FT",
+            "FTA", "FT%", "ORB", "DRB", "TRB", "AST", "STL", "BLK", "TOV", "PF", "PTS", "ORtg", "DRtg"},
+        {"Age", "G", "MP", "FG", "FGA", "FG%", "3P", "3PA", "3P%", "2P", "2PA", "2P%", "FT",
+            "FTA", "FT%", "ORB", "DRB", "TRB", "AST", "STL", "BLK", "TOV", "PF", "PTS", "ORtg", "DRtg"},
+        {"Age", "G", "MP", "FG", "FGA", "FG%", "2P", "2PA", "2P%", "FT", "FTA", "FT%",
+            "ORB", "DRB", "TRB", "AST", "STL", "BLK", "TOV", "PF", "PTS", "ORtg", "DRtg"},
+        {"Age", "G", "MP", "FG", "FGA", "FG%", "2P", "2PA", "2P%", "FT", "FTA", "FT%",
+            "ORB", "DRB", "TRB", "AST", "STL", "BLK", "PF", "PTS", "DRtg"}};
+    // The same regardless of the year; only apply for 2001 onwards.
     private static final String[] onOffCols = {"%MP", "OoTmEFG%", "OoORB%", "OoDRB%", "OoTRB%", "OoTmAST%", "OoTmSTL%",
         "OoTmBLK%", "OoTmTOV%", "OoTmPace", "OoORtg", "OoOpEFG%", "OoOpORB%", "OoOpDRB%", "OoOpTRB%", "OoOpAST%", "OoOpSTL%",
         "OoOpBLK%", "OoOpTOV%", "OoOpPace", "OoDRtg", "OoNtEFG%", "OoNtORB%", "OoNtDRB%", "OoNtTRB%", "OoNtAST%", "OoNtSTL%",
         "OoNtBLK%", "OoNtTOV%", "OoNtPace", "OoNtRtg"};
+    // First since 1980, second since 1974 - no threes - then miss ORB, then miss opponent info pre 71. We ignore Arena and Attendance.
+    private static final String[][] topTeamCols = {
+        {"MP", "FG", "FGA", "FG%", "3P", "3PA", "3P%", "2P", "2PA", "2P%", "FT", "FTA", "FT%", "ORB", "DRB", "TRB",
+            "AST", "STL", "BLK", "TOV"},
+        {"MP", "FG", "FGA", "FG%", "FT", "FTA", "FT%", "ORB", "DRB", "TRB", "AST", "STL", "BLK", "TOV"},
+        {"MP", "FG", "FGA", "FG%", "FT", "FTA", "FT%", "TRB", "AST"},
+        {"FG", "FGA", "FG%", "FT", "FTA", "FT%", "TRB", "AST"}};
+    // First since 1980, second since 1977 - no threes.
+    private static final String[][] bottomTeamCols = {
+        {"SRS", "ORtg", "DRtg", "Pace", "FTr", "3PAr", "eFG%", "TOV%", "ORB%", "FT/FG", "OppeFG%", "OppTOV%", "DRB%", "OppFT/FG"},
+        {"SRS", "ORtg", "DRtg", "Pace", "FTr", "eFG%", "TOV%", "ORB%", "FT/FG", "OppeFG%", "OppTOV%", "DRB%", "OppFT/FG"},
+        {"SRS", "ORtg", "DRtg", "Pace", "FTr", "eFG%", "FT/FG", "OppeFG%", "OppFT/FG"},
+        {"SRS", "ORtg", "DRtg", "Pace", "FTr", "eFG%", "FT/FG"}};
 
     // Cols from each table that are not needed. Per 100 also has duplicate cols with advanced, so those are included.
     private static final String[] advancedIgnorees = {"VORP", "DBPM", "OBPM", "DWS", "OWS", "TRB%", "PER"};
@@ -29,10 +56,9 @@ public class Scraper {
     private static final String[] onOffIgnorees = {"OoNtRtg", "OoNtPace", "OoNtTOV%", "OoNtEFG%", "OoNtBLK%", "OoNtSTL%",
         "OoNtAST%", "OoNtTRB%", "OoNtDRB%", "OoNtORB%", "OoNtEFG%", "OoOpBLK%", "OoOpSTL%", "OoOpAST%", "OoOpTRB%",
         "OoOpDRB%", "OoOpORB%", "OoOpPace", "OoTRB%", "OoTmBLK%", "OoTmSTL%", "OoTmAST%", "OoTmPace"};
-    private static final String[] topTeamTableIgnorees = {"STL", "TRB", "DRB", "ORB"};
+    private static final String[] topTeamTableIgnorees = {"STL", "DRB", "ORB"};
     private static final String[] bottomTeamTableIgnorees = {"FTr"};
-    private static final String[] teamRepeats = {"eFG%", "TOV%", "FT/FGA", "FT/FGA"};
-    private static final String[] teamRenames = {"OppeFG%", "OppTOV%", "OppFT/FG", "FT/FG"};
+    // TODO: Scrap FT/FGA, calculate opp FTr, and assign these to oppCols.
     //</editor-fold>
 
     // Want the averages of allYears to be a global variable, and it is static as there's only one overarching average file.
@@ -40,7 +66,7 @@ public class Scraper {
 
     public static void main(String[] args) throws Exception {
         allYears = SeasonList.readSeasonList("allyears.csv");
-        parseSeason("GSW", 2016);
+        parseSeason("MNL", 1952);
 //        parseSeason("CLE", 2009);
 //        parseSeason("DET", 2004);
 //        parseSeason("OKC", 2018);
@@ -52,11 +78,8 @@ public class Scraper {
     private static void parseSeason(String team, int year) throws Exception {
         TeamSeason parsedInfo = new TeamSeason(team, year);
         readSeasonLink(parsedInfo);
-        if (year > 2000) {
-            readOnOffLink(parsedInfo);
-            parsedInfo.addAdjustments();
-        } else
-            parsedInfo.addMinAdj();
+        if (year > 2000) readOnOffLink(parsedInfo);
+        else parsedInfo.addMinAdj();
         parsedInfo.printAllInfo();
 //        parsedInfo.saveFile();
     }
@@ -78,19 +101,25 @@ public class Scraper {
                 returnee.remove(i);
         addOnOffRows(szn, returnee.toArray(new String[0]));
         szn.deleteCols(onOffIgnorees);
+        szn.addAdjustments();
     }
 
     private static void readSeasonLink(TeamSeason szn) throws Exception {
         // First find the url and table we want. Find the real content of the table(s) with our helper.
         // Then call our add rows helper to add the rows and remove the ones we don't want.
+        String[] advancedNames = getAdvancedCols(szn.year);
+        if (advancedNames == null) return;
         Document statsDoc = Jsoup.connect(szn.url(".html")).get();
         Element blob = statsDoc.selectFirst("[role=main]");
         addTeamInfo(szn, parseComment(blob.selectFirst("div#all_team_and_opponent")), parseComment(blob.selectFirst("div#all_team_misc")));
-        addRows(szn, tableRows(blob, "div#all_advanced"), advancedCols);
+        addRows(szn, tableRows(blob, "div#all_advanced"), advancedNames);
         szn.deleteCols(advancedIgnorees);
         // TODO: Add back in once missing col issue is fixed (i.e. no 3pt% leaves a blank value). Try moving away from add spaces if possible.
-        // addRows(szn, tableRows(blob, "div#all_per_poss"), per100Cols);
-        // szn.deleteCols(per100Ignorees);
+//        String[] hundredNames = getPer100Cols(szn.year);
+//        if (hundredNames != null) {
+//            addRows(szn, tableRows(blob, "div#all_per_poss"), hundredNames);
+//            szn.deleteCols(per100Ignorees);
+//        }
     }
 
     // helpers to find line numbers so the rest can be ignored, and then the relevant rows are parsed
@@ -122,7 +151,7 @@ public class Scraper {
             names[i] = name;
             table[i] = colAsNums;
         }
-        szn.addPlayers(colNames, names, table);
+        szn.addPlayerStats(colNames, names, table);
     }
 
     private static void addOnOffRows(TeamSeason szn, String[] rows) {
@@ -152,7 +181,7 @@ public class Scraper {
             }
             colVals[i / 3] = trulyParsedValues;
         }
-        szn.addPlayers(onOffCols, names, colVals);
+        szn.addPlayerStats(onOffCols, names, colVals);
     }
 
     // Adds spaces to a row's columns to allow the later parsing by split to be easier once JSoup's parser removes junk.
@@ -195,50 +224,79 @@ public class Scraper {
 
     // Takes the selected top and bottom rows from their comment blobs, parses them, and adds it to the team season.
     private static void addTeamInfo(TeamSeason szn, String[] topRows, String[] bottomRows) {
-        int firstUsedRow = searchFromFront("<tr>", topRows) + 3;
-        int numRows = searchFromEnd("  </tr>", topRows) - firstUsedRow - 2;
-        String[] topLabelRows = new String[numRows];
-        System.arraycopy(topRows, firstUsedRow, topLabelRows, 0, numRows);
-
-        firstUsedRow = searchFromFront("<tr>", bottomRows) + 8;
-        numRows = searchFromEnd("  </tr>", bottomRows) - firstUsedRow - 2;
-        String[] bottomLabelRows = new String[numRows];
-        System.arraycopy(bottomRows, firstUsedRow, bottomLabelRows, 0, numRows);
-        String[] topLabels = new String[topLabelRows.length];
-        String[] bottomLabels = new String[bottomLabelRows.length];
-        for (int i = 0; i < topLabels.length; i++)
-            topLabels[i] = topLabelRows[i].split("<*+ >")[1].split("<")[0];
-        for (int i = 0; i < bottomLabels.length; i++)
-            bottomLabels[i] = bottomLabelRows[i].split("<*+ >")[1].split("<")[0];
+        String[] topLabels = getTopTeamCols(szn.year);
+        if (topLabels == null) return;
+        String[] bottomLabels = getBottomTeamCols(szn.year);
+        if (bottomLabels == null) return;
 
         String topTeamVal = topRows[searchFromEnd("Team/G", topRows)];
-        String topOppVal = topRows[searchFromEnd("Opponent/G", topRows)];
-        String bottomTeamVal = bottomRows[searchFromFront("<tr >", bottomRows)];
         String[] topSplitArr = String.join("  ", topTeamVal.split("<.*?>")).split("  +");
         double[] topRelevantArr = new double[topSplitArr.length - 4];
         for (int i = 0; i < topRelevantArr.length; i++)
             topRelevantArr[i] = Double.parseDouble(topSplitArr[i+2]);
-        String[] oppSplitArr = String.join("  ", topOppVal.split("<.*?>")).split("  +");
-        double[] oppRelevantArr = new double[oppSplitArr.length - 4];
-        for (int i = 0; i < oppRelevantArr.length; i++)
-            oppRelevantArr[i] = Double.parseDouble(oppSplitArr[i+2]);
-        String[] bottomSplitArr = String.join("  ", bottomTeamVal.split("<.*?>")).split("  +");
-        double[] bottomRelevantArr = new double[bottomSplitArr.length - 10];
-        for (int i = 0; i < bottomRelevantArr.length; i++)
-            bottomRelevantArr[i] = Double.parseDouble(bottomSplitArr[i+8]);
 
         szn.addTeamAttributes(topLabels, topRelevantArr);
-        szn.addOppAttributes(topLabels, oppRelevantArr);
         szn.deleteTeamCols(topTeamTableIgnorees);
-        szn.deleteOppCols(topTeamTableIgnorees);
+
+        if (szn.year > 1970) {
+            String topOppVal = topRows[searchFromEnd("Opponent/G", topRows)];
+            String[] oppSplitArr = String.join("  ", topOppVal.split("<.*?>")).split("  +");
+            double[] oppRelevantArr = new double[oppSplitArr.length - 4];
+            for (int i = 0; i < oppRelevantArr.length; i++)
+                oppRelevantArr[i] = Double.parseDouble(oppSplitArr[i + 2]);
+            szn.addOppAttributes(topLabels, oppRelevantArr);
+            szn.deleteOppCols(topTeamTableIgnorees);
+        }
+
+        String bottomTeamVal = bottomRows[searchFromFront("<tr >", bottomRows)];
+        String[] bottomSplitArr = String.join("  ", bottomTeamVal.split("<.*?>")).split("  +");
+        double[] bottomRelevantArr = new double[bottomLabels.length];
+        for (int i = 0; i < bottomRelevantArr.length; i++)
+            bottomRelevantArr[i] = Double.parseDouble(bottomSplitArr[i+8]);
         szn.addTeamAttributes(bottomLabels, bottomRelevantArr);
         szn.deleteTeamCols(bottomTeamTableIgnorees);
-        szn.renameTeamCols(teamRepeats, teamRenames);
+
         szn.per100ize();
         szn.addRelativeInfo(allYears);
     }
 
+    // Takes the node that has the commented out table and returns the table, split into lines.
     private static String[] parseComment(Node blob) {
         return blob.childNode(blob.childNodeSize() - 2).outerHtml().split("[\\r\\n]+");
+    }
+
+    // Get the columns for the given year.
+    private static String[] getPer100Cols(int year) {
+        if (year > 1981) return per100Cols[0];
+        if (year > 1979) return per100Cols[1];
+        if (year > 1977) return per100Cols[2];
+        if (year > 1973) return per100Cols[3];
+        return null;
+    }
+
+    private static String[] getAdvancedCols(int year) {
+        if (year > 1979) return advancedCols[0];
+        if (year > 1977) return advancedCols[1];
+        if (year > 1973) return advancedCols[2];
+        if (year > 1970) return advancedCols[3];
+        if (year > 1964) return advancedCols[4];
+        if (year > 1951) return advancedCols[5];
+        return null;
+    }
+
+    private static String[] getTopTeamCols(int year) {
+        if (year > 1979) return topTeamCols[0];
+        if (year > 1973) return topTeamCols[1];
+        if (year > 1964) return topTeamCols[2];
+        if (year > 1950) return topTeamCols[3];
+        return null;
+    }
+
+    private static String[] getBottomTeamCols(int year) {
+        if (year > 1979) return bottomTeamCols[0];
+        if (year > 1973) return bottomTeamCols[1];
+        if (year > 1970) return bottomTeamCols[2];
+        if (year > 1950) return bottomTeamCols[3];
+        return null;
     }
 }

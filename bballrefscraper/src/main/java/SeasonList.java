@@ -23,8 +23,8 @@ public class SeasonList {
         String line = br.readLine();
         String[] currVals = line.split(",");
         SeasonList returnee = new SeasonList(Double.parseDouble(currVals[0]));
-        ArrayList<Double> convertee = new ArrayList<>();
         returnee.colNames.addAll(Arrays.asList(colNames));
+        ArrayList<Double> convertee = new ArrayList<>();
         for (String val : currVals)
             convertee.add(Double.parseDouble(val));
         returnee.years.add(convertee);
@@ -36,14 +36,6 @@ public class SeasonList {
             returnee.years.add(convertee);
         }
         return returnee;
-    }
-
-    private static String rowCSV(List<Double> year) {
-        StringBuilder sb = new StringBuilder();
-        for (Double stat : year)
-            sb.append(stat).append(",");
-        sb.setLength(sb.length() - 1);
-        return sb.toString();
     }
 
     public List<Double> getYear(int year) {
@@ -82,8 +74,13 @@ public class SeasonList {
     private String[] rowCSVs() {
         String[] csvs = new String[years.size()];
         int i = 0;
-        for (ArrayList<Double> year : years)
-            csvs[i++] = rowCSV(year);
+        for (ArrayList<Double> year : years) {
+            StringBuilder sb = new StringBuilder();
+            for (Double stat : year)
+                sb.append(stat).append(",");
+            sb.setLength(sb.length() - 1);
+            csvs[i++] = sb.toString();
+        }
         return csvs;
     }
 

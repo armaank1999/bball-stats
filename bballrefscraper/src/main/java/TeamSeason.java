@@ -6,9 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.Arrays;
 
 public class TeamSeason {
-    // Scaling constants for new stats, which should be addable to WS/48, so minAdjCoeff is in the right order of magnitude.
-    // Issue for onOffCoeff - some teams have super drastic differences (09 Cavs, 16 Warriors) while others have players
-    // close to each other (18 celtics, 04 Pistons). Divide by sqrt(stddev) or smth to partially normalize the gap?
+    // Scaling constants for new stats, which should be addable to WS/48, so adjust magnitude accordingly.
     private final static double minAdjCoeff = 0.02;
     private final static double onOffCoeff = 0.05;
     private final static double rebCoeff = 0.002;
@@ -16,7 +14,7 @@ public class TeamSeason {
     private static final String baseUrl = "https://www.basketball-reference.com/teams/";
 
     private final String team;
-    private final int year;
+    public final int year;
     private final List<String> playerCols = new ArrayList<>();
     private final Map<String, ArrayList<Double>> playerSeasons = new LinkedHashMap<>();
     private final List<String> teamCols = new ArrayList<>();
@@ -35,20 +33,24 @@ public class TeamSeason {
 
     public void printAllInfo() {
         System.out.printf("Parsed from %s\n", url(".html"));
-        System.out.println("Team Stats: ");
-        for (String colName : teamCols)
-            System.out.printf("%-9s", colName);
-        System.out.println();
-        for (Double val : teamStats)
-            System.out.printf("%-9s", val);
-        System.out.println();
-        System.out.println("Opp Stats:  ");
-        for (String colName : oppCols)
-            System.out.printf("%-9s", colName);
-        System.out.println();
-        for (Double val : oppStats)
-            System.out.printf("%-9s", val);
-        System.out.println();
+        if (teamCols.size() > 0) {
+            System.out.println("Team Stats: ");
+            for (String colName : teamCols)
+                System.out.printf("%-9s", colName);
+            System.out.println();
+            for (Double val : teamStats)
+                System.out.printf("%-9s", val);
+            System.out.println();
+        }
+        if (oppCols.size() > 0) {
+            System.out.println("Opp Stats:  ");
+            for (String colName : oppCols)
+                System.out.printf("%-9s", colName);
+            System.out.println();
+            for (Double val : oppStats)
+                System.out.printf("%-9s", val);
+            System.out.println();
+        }
         System.out.print("Name                       ");
         for (String colName : playerCols)
             System.out.printf("%-9s", colName);
@@ -93,7 +95,7 @@ public class TeamSeason {
         }
     }
 
-    public void addPlayers(String[] newColNames, String[] names, double[][] colVals) {
+    public void addPlayerStats(String[] newColNames, String[] names, double[][] colVals) {
         playerCols.addAll(Arrays.asList(newColNames));
         for (int i = 0; i < names.length; i++) {
             List<Double> row = findOrCreateRow(names[i]);
@@ -112,11 +114,6 @@ public class TeamSeason {
         oppCols.addAll(Arrays.asList(newColNames));
         for (double val : vals)
             oppStats.add(val);
-    }
-
-    public void renameTeamCols(String[] originals, String[] news) {
-        for (int i = 0; i < originals.length; i++)
-            teamCols.set(teamCols.lastIndexOf(originals[i]), news[i]);
     }
 
     private List<Double> findOrCreateRow(String name) {
@@ -139,23 +136,13 @@ public class TeamSeason {
         return returnee;
     }
 
+    public void deleteBlankCols() {
+        while (deleteCol(""));
+    }
+
     public void deleteCols(String[] cols) {
         for (String name : cols)
             deleteCol(name);
-    }
-
-    public void deleteTeamCols(String[] cols) {
-        for (String name : cols)
-            deleteTeamCol(name);
-    }
-
-    public void deleteOppCols(String[] cols) {
-        for (String name : cols)
-            deleteOppCol(name);
-    }
-
-    public void deleteBlankCols() {
-        while (deleteCol(""));
     }
 
     private boolean deleteCol(String colName) {
@@ -167,6 +154,16 @@ public class TeamSeason {
             return true;
         }
         return false;
+    }
+
+    public void deleteTeamCols(String[] cols) {
+        for (String name : cols)
+            deleteTeamCol(name);
+    }
+
+    public void deleteOppCols(String[] cols) {
+        for (String name : cols)
+            deleteOppCol(name);
     }
 
     private void deleteTeamCol(String colName) {
@@ -199,7 +196,8 @@ public class TeamSeason {
             row.set(colPos, Math.floor(10000 * (row.get(colPos) - average)) / 10000);
     }
 
-    // Takes a column and divides each value by sqrt(stddev) to semi adjust gaps that are too large.
+    // Takes a column and divides each value by sqrt(stddev) to semi adjust gaps that are too large, then divides by 10
+    // afterwards because we want the end results to be slightly smaller than WS/48.
     private void semiNormalize(int colPos) {
         int weightPos = playerCols.indexOf("%MP");
         double stdDev = 0;
@@ -217,6 +215,8 @@ public class TeamSeason {
     // as that is less captured by the other baseline advanced stats - number should be between 1 and 2.
     // MinAdj: Give points based on total games played minutes per game as clearly players who play more MPG are better
     // but WS/48 ignores that. Weight other changes based on sqrt games and %MP * (1 - %MP) - stddev for binomial.
+    // AdjWS/48: Sum of the above plus original WS/48
+    // AdjWS: AdjWS/48 * minutes/48
     public void addAdjustments() {
         int minutesI = playerCols.indexOf("MP"), percentI = playerCols.indexOf("%MP"), gamesI = playerCols.indexOf("G"),
             offOOI = playerCols.indexOf("OoORtg"), defOOI = playerCols.indexOf("OoDRtg"), orbI = playerCols.indexOf("ORB%"),
@@ -238,13 +238,13 @@ public class TeamSeason {
         int wsI = playerCols.indexOf("WS/48"), rbI = playerCols.indexOf("RBAdj"), ooI = playerCols.indexOf("OoAdj"), minI = playerCols.indexOf("MinAdj");
         for (List<Double> row : playerSeasons.values()) {
             row.add((double) Math.round((row.get(wsI) + row.get(rbI) + row.get(ooI) + row.get(minI)) * 10000) / 10000);
-            row.add((double) Math.round(row.get(playerCols.size()) * row.get(minutesI) * 1000 / 48) / 1000);
+            row.add((double) Math.round(row.get(playerCols.size()) * row.get(minutesI) * 125 / 6) / 1000);
         }
         playerCols.add("AdjWS/48");
         playerCols.add("AdjWS");
     }
 
-    // For pre +- seasons, just add minAdj
+    // For pre +- seasons, just add minAdj. No need for AdjWS/48 and AdjWS since no plus minus data means we can't get the others
     public void addMinAdj() {
         int minutesI = playerCols.indexOf("MP"), gamesI = playerCols.indexOf("G");
         for (List<Double> row : playerSeasons.values()) {
@@ -256,7 +256,7 @@ public class TeamSeason {
     }
 
     // Compares the team's stats to the league average of that season to account for era changes. Which defense is actually the best
-    // given the era, not just which is in an era of handcheck?
+    // given the era, not just which happens to be in an era of handcheck?
     public void addRelativeInfo(SeasonList averages) {
         List<Double> comparee = averages.getYear(year);
         String[] names = {"Pace", "ORtg", "3P%", "2P%", "FT%", "ORB%", "DRB%", "AST%", "TS%", "eFG%", "FT/FG", "3PAr", "TOV%"};
@@ -266,52 +266,63 @@ public class TeamSeason {
         // that year, which would be the greatest number of all time. 2016 GSW is 7.61, the record is 04 DAL at 8.94
         // (they had great offensive rebounders and shooters with Dirk at Center and glass crashers from the 2-4 and Nash at PG).
         // This is because 04 was the toughest year to score post 3pt line besides 99 == lockout. 2016 spurs were a top 15 defense of all time.
-        // Question: for DRB how do we treat relative? Because rn a 5% rel DRB is way tougher than a 5% rel ORB.
-        // Probably change to -relOppORB, so then both are on the same scale and a team with a 10 relORB and -10 relDRB will be
-        // a net neutral rebounding% team.
+        // TODO: fix net DRB% to scale like net ORB%
         for (int i = 0; i < names.length; i++) {
-            teamCols.add("Rel" + names[i]);
-            teamStats.add(Math.floor(10000 * (teamStats.get(ourPositions[i])/comparee.get(compareePositions[i]) - 1)) / 100);
+            if (ourPositions[i] != -1) {
+                teamCols.add("Rel" + names[i]);
+                teamStats.add(Math.floor(10000 * (teamStats.get(ourPositions[i]) / comparee.get(compareePositions[i]) - 1)) / 100);
+            }
         }
         // Make TOV% negative as lower is better, will do this with all the opponents stats too, as lower opponent efficiency is better.
         // Question: should this be -(team/comparee - 1) or comparee/team - 1? The bleacher report article uses the latter for best defenses
         // of all time (https://bleacherreport.com/articles/2185159-ranking-the-nbas-20-best-defenses-of-all-time)
-        teamStats.set(teamStats.size() - 1, -teamStats.get(teamStats.size() - 1));
+        if (ourPositions[ourPositions.length - 1] != -1) teamStats.set(teamStats.size() - 1, -teamStats.get(teamStats.size() - 1));
         String[] moreCols = {"DRtg", "OppeFG%", "OppFT/FG", "OppTOV%"};
         String[] moreColEquivalents = {"ORtg", "eFG%", "FT/FG", "TOV%"};
         String[] newNames = {"RelDRtg", "RelOpeFG", "RelOpFTR", "RelOpTOV"};
         ourPositions = getTeamCols(moreCols);
         int[] morePositions = averages.getCols(moreColEquivalents);
         for (int i = 0; i < ourPositions.length; i++) {
-            teamCols.add(newNames[i]);
-            teamStats.add(Math.floor(10000 * (teamStats.get(ourPositions[i])/comparee.get(morePositions[i]) - 1)) / -100);
+            if (ourPositions[i] != -1) {
+                teamCols.add(newNames[i]);
+                teamStats.add(Math.floor(10000 * (teamStats.get(ourPositions[i]) / comparee.get(morePositions[i]) - 1)) / -100);
+            }
         }
         // Same as above with TOV%
-        teamStats.set(teamStats.size() - 1, -teamStats.get(teamStats.size() - 1));
+        if (ourPositions[3] != -1) teamStats.set(teamStats.size() - 1, -teamStats.get(teamStats.size() - 1));
         // Add in oppCols now that we get the third row of the table too.
 
     }
 
-    // Adjust all the stats to per 100 poss, and also add in TS%.
+    // Adjust all the stats to per 100 poss, and also add in TS% and AST%.
     public void per100ize() {
-        double adjustmentFactor = 24000.0 / (teamStats.get(teamCols.indexOf("MP")) * teamStats.get(teamCols.indexOf("Pace")));
-        String[] attributes = {"FG", "FGA", "3P", "3PA", "2P", "2PA", "FT", "FTA", "AST", "BLK", "TOV"};
+        double adjustmentFactor;
+        // No team minutes pre 1965, so just assume no overtime.
+        if (year < 1965) adjustmentFactor = 100.0 / teamStats.get(teamCols.indexOf("Pace"));
+        else adjustmentFactor = 24000.0 / (teamStats.get(teamCols.indexOf("MP")) * teamStats.get(teamCols.indexOf("Pace")));
+        String[] attributes = {"FG", "FGA", "3P", "3PA", "2P", "2PA", "FT", "FTA", "TRB", "AST", "BLK", "TOV"};
         int[] positions = getTeamCols(attributes);
         for (int position : positions)
-            teamStats.set(position, Math.floor(100 * teamStats.get(position) * adjustmentFactor) / 100);
+            if (position != -1) teamStats.set(position, Math.floor(100 * teamStats.get(position) * adjustmentFactor) / 100);
         teamCols.add("TS%");
-        teamStats.add(Math.floor(5000 * ((3 * teamStats.get(positions[2]) + 2 * teamStats.get(positions[4]) +
-            teamStats.get(positions[6])) / (teamStats.get(positions[1]) + 0.44 * teamStats.get(positions[7])))) / 10000);
         teamCols.add("AST%");
-        teamStats.add(Math.floor(10000 * teamStats.get(positions[8]) / teamStats.get(positions[0])) / 10000);
-        int[] oppPositions = getOppCols(attributes);
-        for (int position : oppPositions)
-            oppStats.set(position, Math.floor(100 * oppStats.get(position) * adjustmentFactor) / 100);
-        oppCols.add("TS%");
-        oppStats.add(Math.floor(5000 * ((3 * oppStats.get(positions[2]) + 2 * oppStats.get(positions[4]) +
-            oppStats.get(positions[6])) / (oppStats.get(positions[1]) + 0.44 * oppStats.get(positions[7])))) / 10000);
-        oppCols.add("AST%");
-        oppStats.add(Math.floor(10000 * oppStats.get(positions[8]) / oppStats.get(positions[0])) / 10000);
+        if (year > 1979) teamStats.add(Math.floor(5000 * ((3 * teamStats.get(positions[2]) + 2 * teamStats.get(positions[4]) +
+            teamStats.get(positions[6])) / (teamStats.get(positions[1]) + 0.44 * teamStats.get(positions[7])))) / 10000);
+        else teamStats.add(Math.floor(5000 * ((2 * teamStats.get(positions[0]) + teamStats.get(positions[6])) /
+            (teamStats.get(positions[1]) + 0.44 * teamStats.get(positions[7])))) / 10000);
+        teamStats.add(Math.floor(10000 * teamStats.get(positions[9]) / teamStats.get(positions[0])) / 10000);
+        if (oppCols.size() > 0) {
+            positions = getOppCols(attributes);
+            for (int position : positions)
+                if (position != -1) oppStats.set(position, Math.floor(100 * oppStats.get(position) * adjustmentFactor) / 100);
+            oppCols.add("TS%");
+            oppCols.add("AST%");
+            if (year > 1979) oppStats.add(Math.floor(5000 * ((3 * oppStats.get(positions[2]) + 2 * oppStats.get(positions[4]) +
+                oppStats.get(positions[6])) / (oppStats.get(positions[1]) + 0.44 * oppStats.get(positions[7])))) / 10000);
+            else oppStats.add(Math.floor(5000 * ((2 * oppStats.get(positions[0]) + oppStats.get(positions[6])) /
+                (oppStats.get(positions[1]) + 0.44 * oppStats.get(positions[7])))) / 10000);
+            oppStats.add(Math.floor(10000 * oppStats.get(positions[9]) / oppStats.get(positions[0])) / 10000);
+        }
     }
 
 //    Old potential formula from past project
