@@ -11,18 +11,76 @@ public class Scraper {
     //<editor-fold desc="Massive list of constants">
     // List of valid teams by year.
     private static final String[][] teamNames = {
+        //  0 - Present
         {"ATL", "BOS", "BRK", "CHO", "CHI", "CLE", "DAL", "DEN", "DET", "GSW", "HOU", "IND", "LAC", "LAL", "MEM", "MIA",
             "MIL", "MIN", "NOP", "NYK", "OKC", "ORL", "PHI", "PHO", "POR", "SAC", "SAS", "TOR", "UTA", "WAS"},
+        // 1,2,3 - 2012, 2013, 2014, nets to brooklyn, Hornets became pelicans, bobcats became hornets
         {"ATL", "BOS", "BRK", "CHA", "CHI", "CLE", "DAL", "DEN", "DET", "GSW", "HOU", "IND", "LAC", "LAL", "MEM", "MIA",
             "MIL", "MIN", "NOP", "NYK", "OKC", "ORL", "PHI", "PHO", "POR", "SAC", "SAS", "TOR", "UTA", "WAS"},
         {"ATL", "BOS", "BRK", "CHA", "CHI", "CLE", "DAL", "DEN", "DET", "GSW", "HOU", "IND", "LAC", "LAL", "MEM", "MIA",
             "MIL", "MIN", "NOH", "NYK", "OKC", "ORL", "PHI", "PHO", "POR", "SAC", "SAS", "TOR", "UTA", "WAS"},
-        {"ATL", "BOS", "NJN", "CHA", "CHI", "CLE", "DAL", "DEN", "DET", "GSW", "HOU", "IND", "LAC", "LAL", "MEM", "MIA",
-            "MIL", "MIN", "NOH", "NYK", "OKC", "ORL", "PHI", "PHO", "POR", "SAC", "SAS", "TOR", "UTA", "WAS"},
-        {"ATL", "BOS", "NJN", "CHA", "CHI", "CLE", "DAL", "DEN", "DET", "GSW", "HOU", "IND", "LAC", "LAL", "MEM", "MIA",
-            "MIL", "MIN", "NOH", "NYK", "ORL", "PHI", "PHO", "POR", "SAC", "SAS", "SEA", "TOR", "UTA", "WAS"},
-        {"ATL", "BOS", "NJN", "CHA", "CHI", "CLE", "DAL", "DEN", "DET", "GSW", "HOU", "IND", "LAC", "LAL", "MEM", "MIA",
-            "MIL", "MIN", "NOK", "NYK", "ORL", "PHI", "PHO", "POR", "SAC", "SAS", "SEA", "TOR", "UTA", "WAS"}};
+        {"ATL", "BOS", "CHA", "CHI", "CLE", "DAL", "DEN", "DET", "GSW", "HOU", "IND", "LAC", "LAL", "MEM", "MIA", "MIL",
+            "MIN", "NJN", "NOH", "NYK", "OKC", "ORL", "PHI", "PHO", "POR", "SAC", "SAS", "TOR", "UTA", "WAS"},
+        // 4 - 2008, Sonics to Thunder
+        {"ATL", "BOS", "CHA", "CHI", "CLE", "DAL", "DEN", "DET", "GSW", "HOU", "IND", "LAC", "LAL", "MEM", "MIA", "MIL",
+            "MIN", "NJN", "NOH", "NYK", "ORL", "PHI", "PHO", "POR", "SAC", "SAS", "SEA", "TOR", "UTA", "WAS"},
+        // 5,6 - 06, 07, hornets move to OKC and then back
+        {"ATL", "BOS", "CHA", "CHI", "CLE", "DAL", "DEN", "DET", "GSW", "HOU", "IND", "LAC", "LAL", "MEM", "MIA", "MIL",
+            "MIN", "NJN", "NOK", "NYK", "ORL", "PHI", "PHO", "POR", "SAC", "SAS", "SEA", "TOR", "UTA", "WAS"},
+        {"ATL", "BOS", "CHA", "CHI", "CLE", "DAL", "DEN", "DET", "GSW", "HOU", "IND", "LAC", "LAL", "MEM", "MIA", "MIL",
+            "MIN", "NJN", "NOH", "NYK", "ORL", "PHI", "PHO", "POR", "SAC", "SAS", "SEA", "TOR", "UTA", "WAS"},
+        // 7, 8 - Bobcats added, Hornets to new orleans
+        {"ATL", "BOS", "CHI", "CLE", "DAL", "DEN", "DET", "GSW", "HOU", "IND", "LAC", "LAL", "MEM", "MIA", "MIL",
+            "MIN", "NJN", "NOH", "NYK", "ORL", "PHI", "PHO", "POR", "SAC", "SAS", "SEA", "TOR", "UTA", "WAS"},
+        {"ATL", "BOS", "CHI", "CHH", "CLE", "DAL", "DEN", "DET", "GSW", "HOU", "IND", "LAC", "LAL", "MEM", "MIA",
+            "MIL", "MIN", "NJN", "NYK", "ORL", "PHI", "PHO", "POR", "SAC", "SAS", "SEA", "TOR", "UTA", "WAS"},
+        // 9,10  - Grizzlies to Memphis, Bullets to Wizards
+        {"ATL", "BOS", "CHI", "CHH", "CLE", "DAL", "DEN", "DET", "GSW", "HOU", "IND", "LAC", "LAL", "MIA", "MIL",
+            "MIN", "NJN", "NYK", "ORL", "PHI", "PHO", "POR", "SAC", "SAS", "SEA", "TOR", "UTA", "VAN", "WAS"},
+        {"ATL", "BOS", "CHI", "CHH", "CLE", "DAL", "DEN", "DET", "GSW", "HOU", "IND", "LAC", "LAL", "MIA", "MIL",
+            "MIN", "NJN", "NYK", "ORL", "PHI", "PHO", "POR", "SAC", "SAS", "SEA", "TOR", "UTA", "VAN", "WSB"},
+        // 11,12,13 - Grizzlies, Raptors, Magic,Twolves, Hornets, Heat added
+        {"ATL", "BOS", "CHI", "CHH", "CLE", "DAL", "DEN", "DET", "GSW", "HOU", "IND", "LAC", "LAL", "MIA",
+            "MIL", "MIN", "NJN", "NYK", "ORL", "PHI", "PHO", "POR", "SAC", "SAS", "SEA", "UTA", "WSB"},
+        {"ATL", "BOS", "CHI", "CHH", "CLE", "DAL", "DEN", "DET", "GSW", "HOU", "IND", "LAC", "LAL", "MIA",
+            "MIL", "NJN", "NYK", "PHI", "PHO", "POR", "SAC", "SAS", "SEA", "UTA", "WSB"},
+        {"ATL", "BOS", "CHI", "CLE", "DAL", "DEN", "DET", "GSW", "HOU", "IND", "LAC", "LAL", "MIL",
+            "NJN", "NYK", "PHI", "PHO", "POR", "SAC", "SAS", "SEA", "UTA", "WSB"},
+        // 14, 15 - Kings to sacramento, clippers to LA
+        {"ATL", "BOS", "CHI", "CLE", "DAL", "DEN", "DET", "GSW", "HOU", "IND", "KCK", "LAC", "LAL", "MIL",
+            "NJN", "NYK", "PHI", "PHO", "POR", "SAS", "SEA", "UTA", "WSB"},
+        {"ATL", "BOS", "CHI", "CLE", "DAL", "DEN", "DET", "GSW", "HOU", "IND", "KCK", "LAL", "MIL",
+            "NJN", "NYK", "PHI", "PHO", "POR", "SAS", "SDC", "SEA", "UTA", "WSB"},
+        // 16 - Mavericks added
+        {"ATL", "BOS", "CHI", "CLE", "DEN", "DET", "GSW", "HOU", "IND", "KCK", "LAL",
+            "MIL", "NJN", "NYK", "PHI", "PHO", "POR", "SAS", "SDC", "SEA", "UTA", "WSB"},
+        // 17 - Jazz to Utah, Clippers to san diego, nets to new jersey
+        {"ATL", "BOS", "CHI", "CLE", "DEN", "DET", "GSW", "HOU", "IND", "KCK", "LAL",
+            "MIL", "NJN", "NOJ", "NYK", "PHI", "PHO", "POR", "SAS", "SDC", "SEA", "WSB"},
+        {"ATL", "BOS", "BUF", "CHI", "CLE", "DEN", "DET", "GSW", "HOU", "IND", "KCK",
+            "LAL", "MIL", "NJN", "NOJ", "NYK", "PHI", "PHO", "POR", "SAS", "SEA", "WSB"},
+        {"ATL", "BOS", "BUF", "CHI", "CLE", "DEN", "DET", "GSW", "HOU", "IND", "KCK",
+            "LAL", "MIL", "NOJ", "NYK", "NYN", "PHI", "PHO", "POR", "SAS", "SEA", "WSB"},
+        // 20 - ABA Merger
+        {"ATL", "BOS", "BUF", "CHI", "CLE", "DET", "GSW", "HOU", "KCK", "LAL", "MIL", "NOJ", "NYK", "PHI", "PHO", "POR", "SEA", "WSB"},
+        // 21-25 - Kings moved; Jazz added, Bullets name change; bullets name change; kings moved; warriors name change, rockets move
+        {"ATL", "BOS", "BUF", "CHI", "CLE", "DET", "GSW", "HOU", "KCO", "LAL", "MIL", "NOJ", "NYK", "PHI", "PHO", "POR", "SEA", "WSB"},
+        {"ATL", "BOS", "BUF", "CAP", "CHI", "CLE", "DET", "GSW", "HOU", "KCO", "LAL", "MIL", "NYK", "PHI", "PHO", "POR", "SEA"},
+        {"ATL", "BAL", "BOS", "BUF", "CHI", "CLE", "DET", "GSW", "HOU", "KCO", "LAL", "MIL", "NYK", "PHI", "PHO", "POR", "SEA"},
+        {"ATL", "BAL", "BOS", "BUF", "CHI", "CIN", "CLE", "DET", "GSW", "HOU", "LAL", "MIL", "NYK", "PHI", "PHO", "POR", "SEA"},
+        {"ATL", "BAL", "BOS", "BUF", "CHI", "CIN", "CLE", "DET", "LAL", "MIL", "NYK", "PHI", "PHO", "POR", "SDR", "SEA", "SFW"},
+        // 26-29 - Braves, cavs, blazers added; Bucks and suns added; sonics and rockets added, hawks moved; bulls added
+        {"ATL", "BAL", "BOS", "CHI", "CIN", "DET", "LAL", "MIL", "NYK", "PHI", "PHO", "SDR", "SEA", "SFW"},
+        {"BAL", "BOS", "CHI", "CIN", "DET", "LAL", "NYK", "PHI", "SDR", "SEA", "SFW", "STL"},
+        {"BAL", "BOS", "CHI", "CIN", "DET", "LAL", "NYK", "PHI", "SFW", "STL"},
+        {"BAL", "BOS", "CIN", "DET", "LAL", "NYK", "PHI", "SFW", "STL"},
+        // 30-33 - Nats to sixers, bullets form, warriors move, lakers move, royals + pistons move, hawks move
+        {"BOS", "CHZ", "CIN", "DET", "LAL", "NYK", "SFW", "STL", "SYR"},
+        {"BOS", "CHP", "CIN", "DET", "LAL", "NYK", "PHW", "STL", "SYR"},
+        {"BOS", "CIN", "DET", "LAL", "NYK", "PHW", "STL", "SYR"},
+        {"BOS", "CIN", "DET", "MNL", "NYK", "PHW", "STL", "SYR"},
+        {"BOS", "FTW", "MNL", "NYK", "PHW", "ROC", "STL", "SYR"},
+        {"BOS", "FTW", "MLH", "MNL", "NYK", "PHW", "ROC", "SYR"}};
     // First is 1980 to present, No 3PAr in 78 and 79, No TOV or USG from 74-77, No O/DRB, STL/BLK, BPM from 71 to 73,
     // No TRB 65 - 70, 1952 - 1964 no AST. Pre 1952 doesn't even have minutes played so not bothering
     private static final String[][] advancedCols = {
@@ -57,7 +115,7 @@ public class Scraper {
         {"MP", "FG", "FGA", "FG%", "FT", "FTA", "FT%", "ORB", "DRB", "TRB", "AST", "STL", "BLK", "TOV"},
         {"MP", "FG", "FGA", "FG%", "FT", "FTA", "FT%", "TRB", "AST"},
         {"FG", "FGA", "FG%", "FT", "FTA", "FT%", "TRB", "AST"}};
-    // First since 1980, second since 1977 - no threes.
+    // First since 1980, second since 1977 - no threes, then no OvsDrb, then no opp info.
     private static final String[][] bottomTeamCols = {
         {"SRS", "ORtg", "DRtg", "Pace", "FTr", "3PAr", "eFG%", "TOV%", "ORB%", "FT/FG", "OppeFG%", "OppTOV%", "DRB%", "OppFT/FG"},
         {"SRS", "ORtg", "DRtg", "Pace", "FTr", "eFG%", "TOV%", "ORB%", "FT/FG", "OppeFG%", "OppTOV%", "DRB%", "OppFT/FG"},
@@ -80,12 +138,12 @@ public class Scraper {
 
     public static void main(String[] args) throws Exception {
         allYears = SeasonList.readSeasonList("allyears.csv");
-        parseSeasons(2008);
-//        parseSeason("CHI", 1996);
+        for (int i = 1957; i > 1950; i--)
+            parseSeasons(i);
+        parseSeason("CHI", 1996);
         parseSeason("GSW", 2016);
         parseSeason("CLE", 2009);
         parseSeason("DET", 2004);
-        parseSeason("LAL", 2009);
         parseSeason("SAS", 2016);
     }
 
@@ -99,10 +157,10 @@ public class Scraper {
         if (year > 2018) return;
         TeamSeason parsedInfo = new TeamSeason(team, year);
         readSeasonLink(parsedInfo);
-        if (year > 2000) readOnOffLink(parsedInfo);
-        else parsedInfo.addMinAdj();
+//        if (year > 2000) readOnOffLink(parsedInfo);
+//        else parsedInfo.addMinAdj();
 //        parsedInfo.printAllInfo();
-        parsedInfo.saveFile();
+//        parsedInfo.saveFile();
     }
 
     // Functions that read the relevant link with JSoup, then find the right info, parse it, and add to the TeamSeason.
@@ -131,11 +189,10 @@ public class Scraper {
         String[] advancedNames = getAdvancedCols(szn.year);
         if (advancedNames == null) return;
         Document statsDoc = Jsoup.connect(szn.url(".html")).get();
-        Element blob = statsDoc.selectFirst("[role=main]");
-        addTeamInfo(szn, parseComment(blob.selectFirst("div#all_team_and_opponent")), parseComment(blob.selectFirst("div#all_team_misc")));
-        addRows(szn, tableRows(blob, "div#all_advanced"), advancedNames);
-        szn.deleteCols(advancedIgnorees);
-        // TODO: Add back in once missing col issue is fixed (i.e. no 3pt% leaves a blank value). Try moving away from add spaces if possible.
+//        Element blob = statsDoc.selectFirst("[role=main]");
+//        addTeamInfo(szn, parseComment(blob.selectFirst("div#all_team_and_opponent")), parseComment(blob.selectFirst("div#all_team_misc")));
+//        addRows(szn, tableRows(blob, "div#all_advanced"), advancedNames);
+//        szn.deleteCols(advancedIgnorees);
 //        String[] hundredNames = getPer100Cols(szn.year);
 //        if (hundredNames != null) {
 //            addRows(szn, tableRows(blob, "div#all_per_poss"), hundredNames);
@@ -319,7 +376,38 @@ public class Scraper {
         if (year > 2013) return teamNames[1];
         if (year > 2012) return teamNames[2];
         if (year > 2008) return teamNames[3];
-        if (year > 2002) return teamNames[4];
+        if (year > 2007) return teamNames[4];
+        if (year > 2005) return teamNames[5];
+        if (year > 2004) return teamNames[6];
+        if (year > 2002) return teamNames[7];
+        if (year > 2001) return teamNames[8];
+        if (year > 1997) return teamNames[9];
+        if (year > 1995) return teamNames[10];
+        if (year > 1989) return teamNames[11];
+        if (year > 1988) return teamNames[12];
+        if (year > 1985) return teamNames[13];
+        if (year > 1984) return teamNames[14];
+        if (year > 1980) return teamNames[15];
+        if (year > 1979) return teamNames[16];
+        if (year > 1978) return teamNames[17];
+        if (year > 1977) return teamNames[18];
+        if (year > 1976) return teamNames[19];
+        if (year > 1975) return teamNames[20];
+        if (year > 1974) return teamNames[21];
+        if (year > 1973) return teamNames[22];
+        if (year > 1972) return teamNames[23];
+        if (year > 1971) return teamNames[24];
+        if (year > 1970) return teamNames[25];
+        if (year > 1968) return teamNames[26];
+        if (year > 1967) return teamNames[27];
+        if (year > 1966) return teamNames[28];
+        if (year > 1963) return teamNames[29];
+        if (year > 1962) return teamNames[30];
+        if (year > 1961) return teamNames[31];
+        if (year > 1960) return teamNames[32];
+        if (year > 1957) return teamNames[33];
+        if (year > 1955) return teamNames[34];
+        if (year > 1951) return teamNames[35];
         return null;
     }
 }
