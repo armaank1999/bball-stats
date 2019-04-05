@@ -31,6 +31,7 @@ public class TeamSeason {
         return baseUrl + team + "/" + year + ending;
     }
 
+    //<editor-fold desc="Printing functions.">
     public void printAllInfo() {
         System.out.printf("Parsed from %s\n", url(".html"));
         if (teamCols.size() > 0) {
@@ -76,6 +77,7 @@ public class TeamSeason {
             csvs[i++] = rowCSV(name);
         return csvs;
     }
+    //</editor-fold>
 
     public void saveFile() throws Exception {
         FileWriter output = new FileWriter("playerOutput/" + year + team + ".csv");
@@ -116,6 +118,7 @@ public class TeamSeason {
             oppStats.add(val);
     }
 
+    //<editor-fold desc="Get or delete cols.">
     private List<Double> findOrCreateRow(String name) {
         if (!playerSeasons.containsKey(name))
             playerSeasons.put(name, new ArrayList<>());
@@ -181,6 +184,7 @@ public class TeamSeason {
             oppStats.remove(index);
         }
     }
+    //</editor-fold>
 
     // Deletes players who have too few cols, stopgap until we can 0 fill them.
     private void deleteBuggers() {
@@ -335,18 +339,4 @@ public class TeamSeason {
             oppStats.add(Math.floor(10000 * oppStats.get(positions[9]) / oppStats.get(positions[0])) / 10000);
         }
     }
-
-//    Old potential formula from past project
-//    // Add Points based on the player's usage rate and scoring efficiency .08 term gives extra points for having extra usage
-//    // to not overglorify low usage players; netEff term credits players for being efficient. WS formula uses .92 so I use this.
-//    // Then add points for providing floor spacing. The /20 is arbitrary.
-//    // One could theoretically add a FTr term but there are upsides (stop transition scoring, foul trouble) and downsides
-//    // (less offensive boards) as well as momentum.
-//    private static double SPA(Season pS, Season yA) {
-//        double netEff = pS.getElem("TS%") - yA.getElem("TS%");
-//        double usage = pS.getElem("USG%");
-//        double net3PR = pS.getElem("3PAr") - yA.getElem("3PAr");
-//        return Math.floor((usage * (netEff + net3PR / 20.0) + .08 * (usage - 20.0)) * 1000) / 1000;
-//    }
-
 }
