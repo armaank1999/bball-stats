@@ -138,13 +138,7 @@ public class Scraper {
 
     public static void main(String[] args) throws Exception {
         allYears = SeasonList.readSeasonList("allyears.csv");
-        for (int i = 1957; i > 1950; i--)
-            parseSeasons(i);
-        parseSeason("CHI", 1996);
-        parseSeason("GSW", 2016);
-        parseSeason("CLE", 2009);
-        parseSeason("DET", 2004);
-        parseSeason("SAS", 2016);
+        parseSeasons( 2019);
     }
 
     private static void parseSeasons(int year) throws Exception {
@@ -154,13 +148,11 @@ public class Scraper {
     }
 
     private static void parseSeason(String team, int year) throws Exception {
-        if (year > 2018) return;
+        if (year > 2019) return;
         TeamSeason parsedInfo = new TeamSeason(team, year);
         readSeasonLink(parsedInfo);
-//        if (year > 2000) readOnOffLink(parsedInfo);
-//        else parsedInfo.addMinAdj();
-//        parsedInfo.printAllInfo();
-//        parsedInfo.saveFile();
+        if (year > 2000) readOnOffLink(parsedInfo);
+        else parsedInfo.addMinAdj();
     }
 
     // Functions that read the relevant link with JSoup, then find the right info, parse it, and add to the TeamSeason.
@@ -335,7 +327,7 @@ public class Scraper {
         return blob.childNode(blob.childNodeSize() - 2).outerHtml().split("[\\r\\n]+");
     }
 
-    // Get the columns for the given year.
+    //<editor-fold desc="Get the columns for the given year.">
     private static String[] getPer100Cols(int year) {
         if (year > 1981) return per100Cols[0];
         if (year > 1979) return per100Cols[1];
@@ -371,7 +363,7 @@ public class Scraper {
     }
 
     private static String[] getTeams(int year) {
-        if (year > 2018) return null;
+        if (year > 2019) return null;
         if (year > 2014) return teamNames[0];
         if (year > 2013) return teamNames[1];
         if (year > 2012) return teamNames[2];
@@ -410,4 +402,5 @@ public class Scraper {
         if (year > 1951) return teamNames[35];
         return null;
     }
+    //</editor-fold>
 }
