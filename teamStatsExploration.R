@@ -6,12 +6,17 @@ summary(defensemodel)
 # even after accounting for the four factors, by a significant amount.
 # Forcing more turnovers and getting defensive rebounds is good, while them making
 # free throws and eFG more efficiently is bad.
+# I tried a model with blocks but they had a non significant positive correlation,
+# after accounting for the other factors. But they are correlated with good defense.
+ggplot(data = nba2018teams, aes(x = BLK, y = DRtg)) + geom_point() + geom_smooth(method = lm)
+ggplot(data = nba2018teams, aes(x = BLK, y = OppeFG.)) + geom_point() + geom_smooth(method = lm)
+
 offensemodelTS = lm(data = nba2018teams, ORtg ~ Pace + TS. + ORB. + TOV. + AST.)
 offensemodelnoTS = lm(data = nba2018teams, ORtg ~ Pace + eFG. + FT.FG + ORB. + TOV. + AST.)
 summary(offensemodelTS)
 summary(offensemodelnoTS)
-# The model involving TS% is better. Here, the pace term is not significant, but faster
-# teams also tend to have worse offenses, even after accounting for the factors!
+# The model involving TS% is better. Here, the pace term is not significant, and goes
+# either way depending on whether we use the TS model or not.
 # AST% is not relevant after accounting for the other stuff. Let's see its correlation
 # with the other variables.
 cor(nba2018teams$AST.,nba2018teams$eFG.)*sd(nba2018teams$AST.)/sd(nba2018teams$eFG.)
